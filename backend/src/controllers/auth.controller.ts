@@ -1,6 +1,6 @@
 import type { Request, Response } from 'express'
 import bcrypt from 'bcrypt'
-import { SignupSchema, SigninSchema } from '../types/auth.type'
+import { SignupSchema, SigninSchema } from '../types/types'
 import jwt from 'jsonwebtoken'
 import { prismaClient } from '../config/db'
 
