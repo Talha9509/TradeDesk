@@ -24,19 +24,22 @@ export const BuySell = async (req: Request, res: Response) => {
   console.log(`Step 2.1: Balance ${JSON.stringify(balance)} `)
 
   const available = validatedInput.data.side == "buy" ? balance.USD.available : balance[asset].available
+  console.log(`Step 2.2: available ${available}`)
   const reqAmount = validatedInput.data.side == "buy" ? (validatedInput.data.price * validatedInput.data.quantity) : validatedInput.data.quantity
+  console.log(`Step 2.3: req amount ${reqAmount}`)
   if (available < reqAmount) return res.status(400).json({ message: "No balance" })
-  // console.log(`Step 2.2: Enough balance`)
 
   // 3. reduce the balance or lock in case of limit
   if (validatedInput.data.side == "buy") {
-    balance.USD.locked = balance.USD.locked + reqAmount
-    balance.USD.available = balance.USD.locked - reqAmount
+    balance.USD.locked += reqAmount
+    balance.USD.available -= reqAmount
+    console.log(`Step 3.1.1: Balance ${JSON.stringify(balance)} `)
   } else {
-    balance[asset].locked = balance[asset].locked + reqAmount
-    balance[asset].available = balance[asset].locked - reqAmount
+    balance[asset].locked += reqAmount
+    balance[asset].available -= reqAmount
+    console.log(`Step 3.1.2: Balance ${JSON.stringify(balance)} `)
   }
-  // console.log(`Step 3.1: USD/Assets locked`)
+  // console.log(`Step 3.1.3: USD/Assets locked`)
 
   const nextOrderId = Orders.length + 1   
 
@@ -102,10 +105,17 @@ export const BuySell = async (req: Request, res: Response) => {
       console.log(`Step 4.8: buyerbalance ${JSON.stringify(buyerBalance)}, sellerbalance ${JSON.stringify(sellerBalance)}`)
       const tradedUSD = levelPrice * matchedQty
       
+      // if user gets the asset in less prize
+      if(tradedUSD < buyerBalance.USD.locked){
+        const diff = buyerBalance.USD.locked - tradedUSD
+        buyerBalance.USD.available += diff
+        buyerBalance.USD.locked -= diff
+        console.log(`Step 4.8.1: buyer balance ${JSON.stringify(buyerBalance)}`)
+      }
       buyerBalance.USD.locked -= tradedUSD
       buyerBalance[asset].available += matchedQty
-      sellerBalance[asset].locked -= tradedUSD
-      sellerBalance.USD.available += matchedQty
+      sellerBalance[asset].locked -= matchedQty
+      sellerBalance.USD.available += tradedUSD
       console.log(`Step 4.9: after exchange, buyerbalance ${JSON.stringify(buyerBalance)}, sellerbalance ${JSON.stringify(sellerBalance)}`)
 
       level.totalQty -= matchedQty
