@@ -1,7 +1,6 @@
 import type { Request, Response } from 'express'
 import { prismaClient } from '../config/db'
-import { Balances, OrderBook, Orders, Fills, restOrderOnBook } from '../types/types'
-import { BuyOrder, getOrCreateBalance } from '../types/types'
+import { BuyOrder, getOrCreateBalance, OrderBook, Orders, Fills, restOrderOnBook } from '../types/types'
 
 export const BuySell = async (req: Request, res: Response) => {
 //   algorithm:

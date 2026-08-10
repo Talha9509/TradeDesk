@@ -20,28 +20,18 @@ export const BuyOrder = z.object({
 
 export const Balances: Record<number, any> = {}
 
-// creates a zeroed balance the first time we see a userId, returns it either way
+// creates a balance with some stock the first time we see a userId, returns it either way
 export function getOrCreateBalance(userId: number) {
   if (!Balances[userId]) {
     Balances[userId] = {
-      USD: { available: 0, locked: 0 },
-      SOL: { available: 0, locked: 0 },
-      BTC: { available: 0, locked: 0 },
-      ETH: { available: 0, locked: 0 }
+      USD: { available: 1000, locked: 0 },
+      SOL: { available: 100, locked: 0 },
+      BTC: { available: 100, locked: 0 },
+      ETH: { available: 100, locked: 0 }
     }
   }
   return Balances[userId]
 }
-// seed user 1 for testing, through the same function everything else uses
-Object.assign(getOrCreateBalance(1), {
-  USD: { available: 10000, locked: 0 },
-  SOL: { available: 200, locked: 0 }
-})
-
-Object.assign(getOrCreateBalance(6), {
-  USD: { available: 10000, locked: 0 },
-  SOL: { available: 200, locked: 0 }
-})
 
 export const Orders: any[] = []
 export const Fills: any[] = []
