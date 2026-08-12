@@ -1,29 +1,33 @@
-import { createClient } from 'redis'
-
-const client = await createClient()
-  .on("error", (err) => console.log('Error connecting to redis', err))
-  .connect()
-
-const publisherClient = await createClient()
-  .on("error", (err) => console.log('Error connecting to redis', err))
-  .connect()
-
-const BALANCES = {}
-
-const ORDERBOOK = {
-  SOL: {},
-  BTC: {},
-  ETH: {}
-}
+import handleEngine from './Engine/handleEngine'
+import type { EngineRequest, EngineResponse } from './Types/types'
+import { subscriberClient, publisherClient } from './config/redis'
 
 while(1){
-  const response = await client.brPop('incoming-queue', 5)
+  const response = await subscriberClient.brPop('incoming-queue', 5)
   if(!response) continue;
 
-  const res = await JSON.parse(response.element)
-  console.log(res.data)
-  const data = res.data
-  const identifier = res.queueIdentifier
+  const res: EngineRequest = await JSON.parse(response.element)
+  console.log(res.data, res.queueIdentifier)
 
-  await publisherClient.lPush('response-queue-' + res.QUEUE_ID, JSON.stringify({ data, identifier: res.queueIdentifier, QUEUE_ID: res.QUEUE_ID }))
+  try {
+    const data = await res.data
+    const result = await handleEngine(res)
+    console.log("handle engine result "+ result)
+    const ToBackend: EngineResponse = { 
+      ok: true, 
+      queueIdentifier: res.queueIdentifier,
+      QUEUE_ID: res.QUEUE_ID,
+      data: result
+    }
+    await publisherClient.lPush(`response-queue-${res.QUEUE_ID}`, JSON.stringify(ToBackend))
+  } catch (error) {
+    console.log(error)
+    const ToBackend: EngineResponse = {
+      ok: false, 
+      queueIdentifier: res.queueIdentifier, 
+      QUEUE_ID: res.QUEUE_ID, 
+      error: error instanceof Error ? error.message : "engine_error" 
+    }
+    await publisherClient.lPush(`response-queue-${res.QUEUE_ID}`, JSON.stringify(ToBackend))
+  }
 }

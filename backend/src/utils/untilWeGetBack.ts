@@ -1,4 +1,5 @@
 import { subscriberClient } from '../config/redis'
+import type { EngineResponse } from '../types/types'
 // i want
 // one while loop to get all data from queue
 
@@ -12,13 +13,12 @@ async function pollQueue(){
   } else {
     console.log(response)
   
-    const res = await JSON.parse(response.element)
+    const res: EngineResponse = await JSON.parse(response.element)
     console.log(res)
     const data = res.data
-    // const id = res.identifier
     if(res.QUEUE_ID == QUEUE_ID){
-      if (res.identifier && pendingResolves[res.identifier]) {
-        pendingResolves[res.identifier](data)
+      if (res.queueIdentifier && pendingResolves[res.queueIdentifier]) {
+        pendingResolves[res.queueIdentifier](data)
       }
       pollQueue()
     }
