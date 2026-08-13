@@ -5,6 +5,6 @@ import { authMiddleware } from '../middlewares/auth.middleware'
 const router:Router = Router()
 
 router.post("/buysell", BuySell)
-router.delete("/delete/:orderId", DeleteOrder)
+router.delete("/:orderId", DeleteOrder)
 
 export default router

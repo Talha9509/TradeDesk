@@ -1,12 +1,13 @@
 import { OrderBook } from '../Types/types'
-import { Orders, Fills, type Order, type Fill } from '../Types/OrderFillsType'
+import { Orders, Fills, type OrderRecord, type Fill } from '../Types/OrderFillsType'
 import getOrCreateBalance from "../utils/getOrCreateBalance";
 
 export const CancelOrder = (data: Record<string | number, any>, userId: number) => {
   // Algorithm:
   // 0. find the order using orderId
   const orderId = data.orderId
-  const reqOrder = Orders.find((order) => order.id == orderId)
+  const reqOrder = Orders.get(orderId)
+  // const reqOrder = Orders.find((order) => order.id == orderId)
   console.log(`0. Required order: ${JSON.stringify(reqOrder)}`)
   
   // 1. the order must be limit order only & 2. the status of order must be open
@@ -25,7 +26,7 @@ export const CancelOrder = (data: Record<string | number, any>, userId: number) 
   if(!priceLevel || !reqOrder) throw Error("Can't Cancel the Order")
     const remainQty = reqOrder?.quantity - reqOrder?.filledQty
   priceLevel.totalQty = priceLevel.totalQty - remainQty
-  priceLevel.orders.filter((order) => order.id != orderId)
+  priceLevel.orders.filter((order) => order.orderId != orderId)
   console.log(`3.2: priceLevel: ${JSON.stringify(priceLevel)}`)
   
   // 4. 
@@ -48,7 +49,7 @@ export const CancelOrder = (data: Record<string | number, any>, userId: number) 
   } else {
     // partially filled
     if(reqOrder?.side == 'buy'){
-      const fills = Fills.filter((fill) => fill.orderId != orderId)
+      const fills = Fills.filter((fill) => fill.buyOrderId != orderId)
       console.log(`4.2.1 fills: ${fills}`)
       let actualPricePaid: number = 0;
       for(const fill of fills){

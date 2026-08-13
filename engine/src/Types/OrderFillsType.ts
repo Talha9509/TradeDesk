@@ -1,5 +1,5 @@
-export type Order = {
-  id: number,
+export type OrderRecord = {
+  orderId: string,
   userId: number,
   market: "SOL" | "BTC" | "ETH",
   price: number,
@@ -8,18 +8,21 @@ export type Order = {
   side: "buy" | "sell",
   filledQty: number,
   status: "Open" | "Filled" | "Cancelled",
+  fills: Fill[]
   createdAt: string
 }
-export const Orders: Order[] = []
+export const Orders = new Map<string, OrderRecord>()
 
 export type Fill = { 
   quantity: number, 
   side: "buy" | "sell", 
-  type: "maker" | "taker", 
+  // type: "maker" | "taker", 
   userId: number, 
   price: number, 
   asset: "SOL" | "BTC" | "ETH", 
-  orderId: number, 
+  buyOrderId: string,
+  sellOrderId: string,
+  fillId: string,
   createdAt: string 
 }
 export const Fills: Fill[] = []

@@ -1,5 +1,5 @@
 import { OrderBook } from '../Types/types'
-import { Orders, Fills, type Order, type Fill } from '../Types/OrderFillsType'
+import { Orders, Fills, type OrderRecord, type Fill } from '../Types/OrderFillsType'
 import getOrCreateBalance from "../utils/getOrCreateBalance";
 import restOrderOnBook from '../utils/restOrderonBook'
 
@@ -33,22 +33,24 @@ export const CreateOrder = (data: Record<string | number, any>, userId: number) 
   }
   // console.log(`Step 3.1.3: USD/Assets locked`)
 
-  const nextOrderId = Orders.length + 1   
+  const OrderId = crypto.randomUUID()  
 
-  const incomingOrder: Order = {
-    id: nextOrderId,
+  const incomingOrder: OrderRecord = {
+    orderId: OrderId,
     userId: userId,
     market: asset,
     price: data.price,
     quantity: data.quantity,
     type: data.type,
     side: data.side,
+    fills: [],
     filledQty: 0,
     status: "Open",
     createdAt: new Date().toISOString()
   }
   console.log(`Step 3.2: Incoming Order ${JSON.stringify(incomingOrder)}`)
-  Orders.push(incomingOrder)
+  Orders.set(OrderId, incomingOrder)
+  // Orders.push(incomingOrder)
   console.log(`Step 3.3: Orders ${JSON.stringify(Orders)}`)
 
   // Matching algorithm:
@@ -70,7 +72,7 @@ export const CreateOrder = (data: Record<string | number, any>, userId: number) 
   const sortedPrices = [...oppBook.keys()].sort((a, b) => incomingOrder.side == "buy" ? a - b : b - a)
   console.log(`Step 4.2: sorted prices ${sortedPrices}`)
 
-  const orderTakerFills = []
+  const orderFill = []
   for(const levelPrice of sortedPrices){
     if(incomingOrder.filledQty >= incomingOrder.quantity) break
 
@@ -100,10 +102,22 @@ export const CreateOrder = (data: Record<string | number, any>, userId: number) 
       if(makerOrder.filledQty === makerOrder.quantity) makerOrder.status = "Filled"
 
       const now = new Date().toISOString()
-      const TakerFill: Fill = { quantity: matchedQty, side: incomingOrder.side, type: "taker", userId: incomingOrder.userId, price: levelPrice, asset: asset, orderId: incomingOrder.id, createdAt: now }
-      Fills.push(TakerFill)
-      orderTakerFills.push(TakerFill)
-      Fills.push({ quantity: matchedQty, side: makerOrder.side, type: "maker", userId: makerOrder.userId, price: levelPrice, asset: asset, orderId: makerOrder.id, createdAt: now })
+      const Fill: Fill = { 
+        quantity: matchedQty, 
+        side: incomingOrder.side, 
+        userId: incomingOrder.userId, 
+        price: levelPrice, 
+        asset: asset, 
+        buyOrderId: incomingOrder.side == 'buy' ? incomingOrder.orderId : makerOrder.orderId, 
+        sellOrderId: incomingOrder.side == 'buy' ? makerOrder.orderId : incomingOrder.orderId, 
+        fillId: crypto.randomUUID(), 
+        createdAt: now 
+      }
+      Fills.push(Fill)
+      incomingOrder.fills.push(Fill)
+      makerOrder.fills.push(Fill)
+      orderFill.push(Fill)
+      // Fills.push({ quantity: matchedQty, side: makerOrder.side, type: "maker", userId: makerOrder.userId, price: levelPrice, asset: asset, orderId: makerOrder.id, createdAt: now })
       console.log(`Step 4.7: fills ${JSON.stringify(Fills)}`)
 
       const buyerId = data.side == "buy" ? incomingOrder.userId : makerOrder.userId
@@ -148,7 +162,7 @@ export const CreateOrder = (data: Record<string | number, any>, userId: number) 
 
   console.log(`Step last: Balance `)
   console.log(balance)
-  return { order: incomingOrder, fills: orderTakerFills }
+  return { order: incomingOrder, fills: orderFill }
 
   // 4. 
     // i. for market:

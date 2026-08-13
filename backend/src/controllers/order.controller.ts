@@ -4,7 +4,7 @@ import { client } from '../config/redis'
 import { untilWeGetBack, QUEUE_ID } from '../utils/untilWeGetBack'
 
 export const BuySell = async (req: Request, res: Response) => {
-  const userId = req.userId!
+  const userId = req.userId || 1
   const validatedInput = Order.safeParse(req.body)
   if (!validatedInput.success) return res.status(400).json({ message: "Invalid Inputs" })
   const data = validatedInput.data
@@ -28,8 +28,8 @@ export const BuySell = async (req: Request, res: Response) => {
 
 
 export const DeleteOrder = async (req: Request, res: Response) => {
-  const orderId = Number(req.params.orderId as string)
-  const userId = req.userId!
+  const orderId = req.params.orderId as string
+  const userId = req.userId || 1;
   const queueIdentifier = Math.round(Math.random() * 1000)
   const payload = { orderId: orderId }
   

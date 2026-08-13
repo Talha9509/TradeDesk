@@ -1,4 +1,4 @@
-import { type Order } from './OrderFillsType'
+import { type OrderRecord } from './OrderFillsType'
 
 export type availLocked = { 
   available: number, 
@@ -10,7 +10,7 @@ type balance = Map<balanceMarket, availLocked>
 
 export const Balances: Map<number, balance> = new Map()
 
-type PriceLevel = { totalQty: number, orders: Order[] }
+type PriceLevel = { totalQty: number, orders: OrderRecord[] }
 
 type OrderBookSide = Map<number, PriceLevel>
 type OrderBook = { bids: OrderBookSide, asks: OrderBookSide }
