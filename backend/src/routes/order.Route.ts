@@ -4,6 +4,6 @@ import { authMiddleware } from '../middlewares/auth.middleware'
 
 const router:Router = Router()
 
-router.post("/buy", BuySell)
+router.post("/buysell", BuySell)
 
 export default router

@@ -1,32 +1,40 @@
-import { getOrCreateBalance, OrderBook, Orders, Fills, restOrderOnBook, type OrderType } from '../Types/types'
+import { OrderBook } from '../Types/types'
+import { Orders, Fills, type Order, type Fill } from '../Types/OrderFillsType'
+import getOrCreateBalance from "../utils/getOrCreateBalance";
+import restOrderOnBook from '../utils/restOrderonBook'
+import type { OrderType } from '../Types/EngineTypes'
 
 export const CreateOrder = (data: OrderType, userId: number) => {
   // 2. check balance of user if he has money for req quantity, stock for selling
   const asset =  data.stockName
   const balance = getOrCreateBalance(userId!)
-  console.log(`Step 2.1: Balance ${JSON.stringify(balance)} `)
+  console.log(`Step 2.1: Balance ${balance} `)
 
-  const available = data.side == "buy" ? balance.USD.available : balance[asset].available
+  const available = data.side == "buy" ? balance?.get('USD')?.available : balance?.get(asset)?.available
   console.log(`Step 2.2: available ${available}`)
   const reqAmount = data.side == "buy" ? (data.price * data.quantity) : data.quantity
   console.log(`Step 2.3: req amount ${reqAmount}`)
-  if (available < reqAmount) throw Error("No balance")
+  if (available! < reqAmount) throw Error("No balance")
+  // if(!balance || balance.get('USD') == undefined) throw Error('No balance')
+
+  const usd = balance?.get("USD")!;
+  const assetBalance = balance?.get(asset)!;
 
   // 3. reduce the balance or lock in case of limit
   if (data.side == "buy") {
-    balance.USD.locked += reqAmount
-    balance.USD.available -= reqAmount
-    console.log(`Step 3.1.1: Balance ${JSON.stringify(balance)} `)
+    usd.locked += reqAmount
+    usd.available -= reqAmount
+    console.log(`Step 3.1.1: Balance ${balance} `)
   } else {
-    balance[asset].locked += reqAmount
-    balance[asset].available -= reqAmount
-    console.log(`Step 3.1.2: Balance ${JSON.stringify(balance)} `)
+    assetBalance.locked += reqAmount
+    assetBalance.available -= reqAmount
+    console.log(`Step 3.1.2: Balance ${balance} `)
   }
   // console.log(`Step 3.1.3: USD/Assets locked`)
 
   const nextOrderId = Orders.length + 1   
 
-  const incomingOrder = {
+  const incomingOrder: Order = {
     id: nextOrderId,
     userId: userId,
     market: asset,
@@ -47,8 +55,14 @@ export const CreateOrder = (data: OrderType, userId: number) => {
   // if sell then check bids
   // if kept on limit to buy on 140, then if lesser than 140 also it should match, same for selling
   const oppSide = data.side == "buy" ? "asks" : "bids"
-  const oppBook = OrderBook[asset][oppSide]
-  console.log(`Step 4.1: opp book ${JSON.stringify(oppBook)}`)
+  const AssetInOrderBook = OrderBook.get(asset)
+    if (!AssetInOrderBook) {
+    throw new Error(`Asset not in orderbook: ${AssetInOrderBook}`)
+  }
+  const oppBook = AssetInOrderBook[oppSide]
+  // const oppBook = OrderBook[asset][oppSide]
+
+  console.log(`Step 4.1: opp book ${oppBook}`)
 
   const sortedPrices = Object.keys(oppBook).map(Number).sort((a, b) => incomingOrder.side == "buy" ? a-b : b-a)
   console.log(`Step 4.2: sorted prices ${sortedPrices}`)
@@ -62,14 +76,16 @@ export const CreateOrder = (data: OrderType, userId: number) => {
     (incomingOrder.side == "sell" && levelPrice >= incomingOrder.price)
     if(!crosses) break
 
-    const level = oppBook[levelPrice]
+    const level = oppBook.get(levelPrice)
+    // const level = oppBook[levelPrice]
     console.log(`Step 4.3: level ${JSON.stringify(level)}`)
 
-    while(level.Orders != undefined && level.Orders.length > 0 && incomingOrder.filledQty < incomingOrder.quantity){
-      const makerOrder = level.Orders[0]
+    while(level?.orders != undefined && level.orders.length > 0 && incomingOrder.filledQty < incomingOrder.quantity){
+      const makerOrder = level.orders[0]
       console.log(`Step 4.4: maker Order ${JSON.stringify(makerOrder)}`)
 
       const incomingRemaining = incomingOrder.quantity - incomingOrder.filledQty
+      if(!makerOrder) throw Error('')
       const makerRemaining = makerOrder.quantity - makerOrder.filledQty
       const matchedQty = Math.min(incomingRemaining, makerRemaining)
       console.log(`Step 4.5: matchedQty ${matchedQty}`)
@@ -81,7 +97,7 @@ export const CreateOrder = (data: OrderType, userId: number) => {
       if(makerOrder.filledQty === makerOrder.quantity) makerOrder.status = "Filled"
 
       const now = new Date().toISOString()
-      const TakerFill = { quantity: matchedQty, side: incomingOrder.side, type: "taker", userId: incomingOrder.userId, price: levelPrice, asset: asset, orderId: incomingOrder.id, createdAt: now }
+      const TakerFill: Fill = { quantity: matchedQty, side: incomingOrder.side, type: "taker", userId: incomingOrder.userId, price: levelPrice, asset: asset, orderId: incomingOrder.id, createdAt: now }
       Fills.push(TakerFill)
       orderTakerFills.push(TakerFill)
       Fills.push({ quantity: matchedQty, side: makerOrder.side, type: "maker", userId: makerOrder.userId, price: levelPrice, asset: asset, orderId: makerOrder.id, createdAt: now })
@@ -94,25 +110,31 @@ export const CreateOrder = (data: OrderType, userId: number) => {
       console.log(`Step 4.8: buyerbalance ${JSON.stringify(buyerBalance)}, sellerbalance ${JSON.stringify(sellerBalance)}`)
       const tradedUSD = levelPrice * matchedQty
       
+      const buyerUSD = buyerBalance?.get("USD")!;
+      const buyerAssetBalance = buyerBalance?.get(asset)!;
+      const sellerUSD = sellerBalance?.get("USD")!;
+      const sellerAssetBalance = sellerBalance?.get(asset)!;
+
       // if user gets the asset in less prize
-      if(tradedUSD < buyerBalance.USD.locked){
-        const diff = buyerBalance.USD.locked - tradedUSD
-        buyerBalance.USD.available += diff
-        buyerBalance.USD.locked -= diff
+      if(tradedUSD < buyerUSD.locked){
+        const diff = buyerUSD.locked - tradedUSD
+        buyerUSD.available += diff
+        buyerUSD.locked -= diff
         console.log(`Step 4.8.1: buyer balance ${JSON.stringify(buyerBalance)}`)
       }
-      buyerBalance.USD.locked -= tradedUSD
-      buyerBalance[asset].available += matchedQty
-      sellerBalance[asset].locked -= matchedQty
-      sellerBalance.USD.available += tradedUSD
+      buyerUSD.locked -= tradedUSD
+      buyerAssetBalance.available += matchedQty
+      sellerAssetBalance.locked -= matchedQty
+      sellerUSD.available += tradedUSD
       console.log(`Step 4.9: after exchange, buyerbalance ${JSON.stringify(buyerBalance)}, sellerbalance ${JSON.stringify(sellerBalance)}`)
 
       level.totalQty -= matchedQty
       console.log(`Step 4.10: level ${JSON.stringify(level)}`)
-      if(makerOrder.filledQty == makerOrder.quantity) level.Orders.shift()
+      if(makerOrder.filledQty == makerOrder.quantity) level.orders.shift()
       }
     
-    if(level.Orders.length == 0) delete oppBook[levelPrice]
+    if(level?.orders.length == 0) oppBook.delete(levelPrice)
+    // if(level?.orders.length == 0) delete oppBook[levelPrice]
     console.log(`Step 4.11: level ${JSON.stringify(level)}`)
   }
   
