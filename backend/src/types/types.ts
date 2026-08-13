@@ -18,10 +18,8 @@ export const Order = z.object({
   quantity: z.number()
 })
 
-type OrderType = z.infer<typeof Order>;
-
 export type EngineRequest = {
-  data: OrderType,
+  payload: Record<string | number, any>,
   queueIdentifier: number, 
   QUEUE_ID: number, 
   userId: number,
@@ -38,4 +36,5 @@ export type EngineResponse = {
 
 export type EngineCommandType =
   | "create_order"
+  | "cancel_order"
   | "get_user_balance"

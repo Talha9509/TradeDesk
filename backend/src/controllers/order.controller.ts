@@ -12,7 +12,7 @@ export const BuySell = async (req: Request, res: Response) => {
   
   try {
     const pendingResponse = untilWeGetBack(queueIdentifier)
-    const ToEngine: EngineRequest = { data, queueIdentifier, QUEUE_ID, userId, function: 'create_order' }
+    const ToEngine: EngineRequest = { payload: data, queueIdentifier, QUEUE_ID, userId, function: 'create_order' }
     await client.lPush('incoming-queue', JSON.stringify(ToEngine))
 
     const returnedData = await pendingResponse;
@@ -26,6 +26,28 @@ export const BuySell = async (req: Request, res: Response) => {
   }
 }
 
+
+export const DeleteOrder = async (req: Request, res: Response) => {
+  const orderId = Number(req.params.orderId as string)
+  const userId = req.userId!
+  const queueIdentifier = Math.round(Math.random() * 1000)
+  const payload = { orderId: orderId }
+  
+  try {
+    const pendingResponse = untilWeGetBack(queueIdentifier)
+    const ToEngine: EngineRequest = { payload, queueIdentifier, QUEUE_ID, userId, function: 'cancel_order' }
+    await client.lPush('incoming-queue', JSON.stringify(ToEngine))
+
+    const returnedData = await pendingResponse;
+    console.log("returnedData: " + JSON.stringify(returnedData))
+
+    // @ts-ignore
+    return res.json({ meessage: 'Order Cancelled', filledQty: returnedData?.filledQty })
+  } catch (error) {
+    console.log(error)
+    return res.status(500).json({ meessage: 'Internal Server Error' })
+  }
+}
 
 
 

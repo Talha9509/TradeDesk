@@ -1,5 +1,5 @@
 import handleEngine from './Engine/handleEngine'
-import type { EngineRequest, EngineResponse } from './Types/types'
+import type { EngineRequest, EngineResponse } from './Types/EngineTypes'
 import { subscriberClient, publisherClient } from './config/redis'
 
 while(1){
@@ -7,12 +7,10 @@ while(1){
   if(!response) continue;
 
   const res: EngineRequest = await JSON.parse(response.element)
-  console.log(res.data, res.queueIdentifier)
+  console.log(res.payload, res.queueIdentifier)
 
   try {
-    const data = await res.data
     const result = await handleEngine(res)
-    console.log("handle engine result "+ result)
     const ToBackend: EngineResponse = { 
       ok: true, 
       queueIdentifier: res.queueIdentifier,

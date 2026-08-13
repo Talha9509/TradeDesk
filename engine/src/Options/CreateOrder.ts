@@ -2,13 +2,13 @@ import { OrderBook } from '../Types/types'
 import { Orders, Fills, type Order, type Fill } from '../Types/OrderFillsType'
 import getOrCreateBalance from "../utils/getOrCreateBalance";
 import restOrderOnBook from '../utils/restOrderonBook'
-import type { OrderType } from '../Types/EngineTypes'
 
-export const CreateOrder = (data: OrderType, userId: number) => {
+export const CreateOrder = (data: Record<string | number, any>, userId: number) => {
   // 2. check balance of user if he has money for req quantity, stock for selling
   const asset =  data.stockName
   const balance = getOrCreateBalance(userId!)
-  console.log(`Step 2.1: Balance ${balance} `)
+  console.log(`Step 2.1: Balance`)
+  console.log(balance)
 
   const available = data.side == "buy" ? balance?.get('USD')?.available : balance?.get(asset)?.available
   console.log(`Step 2.2: available ${available}`)
@@ -28,7 +28,8 @@ export const CreateOrder = (data: OrderType, userId: number) => {
   } else {
     assetBalance.locked += reqAmount
     assetBalance.available -= reqAmount
-    console.log(`Step 3.1.2: Balance ${balance} `)
+    console.log(`Step 3.1.2: Balance`)
+    console.log(balance)
   }
   // console.log(`Step 3.1.3: USD/Assets locked`)
 
@@ -62,9 +63,11 @@ export const CreateOrder = (data: OrderType, userId: number) => {
   const oppBook = AssetInOrderBook[oppSide]
   // const oppBook = OrderBook[asset][oppSide]
 
-  console.log(`Step 4.1: opp book ${oppBook}`)
+  console.log(`Step 4.1: opp book`)
+  console.log(oppBook)
 
-  const sortedPrices = Object.keys(oppBook).map(Number).sort((a, b) => incomingOrder.side == "buy" ? a-b : b-a)
+  // const sortedPrices = Object.keys(oppBook).map(Number).sort((a, b) => incomingOrder.side == "buy" ? a-b : b-a)
+  const sortedPrices = [...oppBook.keys()].sort((a, b) => incomingOrder.side == "buy" ? a - b : b - a)
   console.log(`Step 4.2: sorted prices ${sortedPrices}`)
 
   const orderTakerFills = []
@@ -143,7 +146,8 @@ export const CreateOrder = (data: OrderType, userId: number) => {
     console.log(`Step 4.12: rest on orderbook`)
   }
 
-  console.log(`Step last: Balance ${JSON.stringify(balance)} `)
+  console.log(`Step last: Balance `)
+  console.log(balance)
   return { order: incomingOrder, fills: orderTakerFills }
 
   // 4. 

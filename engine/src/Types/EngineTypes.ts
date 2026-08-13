@@ -1,6 +1,7 @@
 
 export type EngineCommandType =
   | "create_order"
+  | "cancel_order"
   | "get_user_balance"
 
 export type OrderType = {
@@ -12,7 +13,7 @@ export type OrderType = {
 }
 
 export type EngineRequest = {
-  data: OrderType,
+  payload: Record<string | number, any>,
   queueIdentifier: number, 
   QUEUE_ID: number, 
   userId: number,
