@@ -3,6 +3,7 @@ import { CancelOrder } from '../Options/CancelOrder'
 import { GetOrder } from '../Options/GetOrder'
 import { GetBalance } from '../Options/GetBalance'
 import { type EngineRequest } from '../Types/EngineTypes'
+import { GetDepth } from '../Options/GetDepth'
 
 export default async function handleEngine(engineReq: EngineRequest) {
   if(engineReq.function == 'create_order'){
@@ -24,6 +25,12 @@ export default async function handleEngine(engineReq: EngineRequest) {
   
   else if(engineReq.function == 'get_user_balance'){
     const result = await GetBalance(engineReq.userId)
+    console.log(result)
+    return result
+  }
+
+  else if(engineReq.function == 'get_depth'){
+    const result = await GetDepth(engineReq.payload)
     console.log(result)
     return result
   }

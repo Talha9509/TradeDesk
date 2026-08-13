@@ -1,12 +1,13 @@
-import { BuySell, DeleteOrder, getOrderbyId, getBalance } from '../controllers/order.controller'
+import { BuySell, DeleteOrder, getOrderbyId, getBalance, getDepthofAsset } from '../controllers/order.controller'
 import { Router } from 'express'
 import { authMiddleware } from '../middlewares/auth.middleware'
 
 const router:Router = Router()
 
-router.post("/buysell", BuySell)
-router.get("/balance", getBalance)
-router.delete("/:orderId", DeleteOrder)
-router.get("/:orderId", getOrderbyId)
+router.post("/buysell", authMiddleware, BuySell)
+router.get("/balance", authMiddleware, getBalance)
+router.delete("/:orderId", authMiddleware, DeleteOrder)
+router.get("/:orderId", authMiddleware, getOrderbyId)
+router.get("/depth/:asset", authMiddleware, getDepthofAsset)
 
 export default router

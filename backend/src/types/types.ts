@@ -39,3 +39,4 @@ export type EngineCommandType =
   | "cancel_order"
   | "get_user_balance"
   | "get_order"
+  | "get_depth"
