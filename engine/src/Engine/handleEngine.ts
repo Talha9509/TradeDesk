@@ -1,6 +1,7 @@
 import { CreateOrder } from '../Options/CreateOrder'
 import { CancelOrder } from '../Options/CancelOrder'
 import { GetOrder } from '../Options/GetOrder'
+import { GetBalance } from '../Options/GetBalance'
 import { type EngineRequest } from '../Types/EngineTypes'
 
 export default async function handleEngine(engineReq: EngineRequest) {
@@ -17,6 +18,12 @@ export default async function handleEngine(engineReq: EngineRequest) {
 
   else if(engineReq.function == 'get_order'){
     const result = await GetOrder(engineReq.payload, engineReq.userId)
+    console.log(result)
+    return result
+  }
+  
+  else if(engineReq.function == 'get_user_balance'){
+    const result = await GetBalance(engineReq.userId)
     console.log(result)
     return result
   }

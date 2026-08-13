@@ -72,6 +72,27 @@ export const getOrderbyId = async (req: Request, res: Response) => {
 }
 
 
+export const getBalance = async (req: Request, res: Response) => {
+  const userId = req.userId!
+  const queueIdentifier = Math.round(Math.random() * 1000)
+  const payload = {}
+  
+  try {
+    const pendingResponse = untilWeGetBack(queueIdentifier)
+    const ToEngine: EngineRequest = { payload, queueIdentifier, QUEUE_ID, userId, function: 'get_user_balance' }
+    await client.lPush('incoming-queue', JSON.stringify(ToEngine))
+
+    const returnedData = await pendingResponse;
+    console.log("returnedData: " + JSON.stringify(returnedData))
+
+    return res.json({ returnedData })
+  } catch (error) {
+    console.log(error)
+    return res.status(500).json({ meessage: 'Internal Server Error' })
+  }
+}
+
+
 
 
 
