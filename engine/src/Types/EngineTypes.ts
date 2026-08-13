@@ -3,6 +3,7 @@ export type EngineCommandType =
   | "create_order"
   | "cancel_order"
   | "get_user_balance"
+  | "get_order"
 
 export type OrderType = {
   stockName: "SOL" | "BTC" | "ETH",

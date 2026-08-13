@@ -1,5 +1,6 @@
 import { CreateOrder } from '../Options/CreateOrder'
 import { CancelOrder } from '../Options/CancelOrder'
+import { GetOrder } from '../Options/GetOrder'
 import { type EngineRequest } from '../Types/EngineTypes'
 
 export default async function handleEngine(engineReq: EngineRequest) {
@@ -14,8 +15,10 @@ export default async function handleEngine(engineReq: EngineRequest) {
     return result
   }
 
-//   if(engineReq.function == 'cancel_order'){
-
-//   }
+  else if(engineReq.function == 'get_order'){
+    const result = await GetOrder(engineReq.payload, engineReq.userId)
+    console.log(result)
+    return result
+  }
 
 }
