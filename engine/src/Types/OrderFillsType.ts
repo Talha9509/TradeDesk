@@ -3,6 +3,7 @@ export type OrderRecord = {
   userId: number,
   market: "SOL" | "BTC" | "ETH",
   price: number,
+  // averagePrice: number,
   quantity: number,
   type: "limit" | "market",
   side: "buy" | "sell",
