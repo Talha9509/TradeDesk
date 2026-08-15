@@ -1,5 +1,5 @@
 import type { Request, Response } from 'express'
-import { Order, type EngineRequest } from '../types/types'
+import { Order, type EngineRequest, type OrderResponseData, type BalanceData } from '../types/types'
 import { client } from '../config/redis'
 import { untilWeGetBack, QUEUE_ID } from '../utils/untilWeGetBack'
 
@@ -7,7 +7,13 @@ export const BuySell = async (req: Request, res: Response) => {
   const userId = req.userId!
   const validatedInput = Order.safeParse(req.body)
   if (!validatedInput.success) return res.status(400).json({ message: "Invalid Inputs" })
-  const data = validatedInput.data
+  const data = {
+    stockName: validatedInput.data.stockName,
+    type: validatedInput.data.type,
+    side: validatedInput.data.side,
+    price: validatedInput.data.type == 'limit' ? validatedInput.data.price : null,
+    quantity: validatedInput.data.quantity
+  }
   const queueIdentifier = Math.round(Math.random() * 1000)
   
   try {
@@ -15,11 +21,10 @@ export const BuySell = async (req: Request, res: Response) => {
     const ToEngine: EngineRequest = { payload: data, queueIdentifier, QUEUE_ID, userId, function: 'create_order' }
     await client.lPush('incoming-queue', JSON.stringify(ToEngine))
 
-    const returnedData = await pendingResponse;
+    const returnedData = await pendingResponse as { order: OrderResponseData; fills: any[] };
     console.log("returnedData: "+JSON.stringify(returnedData))
   
-    // @ts-ignore
-    return res.json({ message: 'Order placed', filledQty: returnedData?.filledQty })
+    return res.json({ message: 'Order placed', filledQty: returnedData?.order?.filledQty, status: returnedData.order.status, fills: returnedData.fills })
   } catch (error) {
     console.log(error)
     return res.status(500).json({ meessage: 'Internal Server Error' })
@@ -38,11 +43,10 @@ export const DeleteOrder = async (req: Request, res: Response) => {
     const ToEngine: EngineRequest = { payload, queueIdentifier, QUEUE_ID, userId, function: 'cancel_order' }
     await client.lPush('incoming-queue', JSON.stringify(ToEngine))
 
-    const returnedData = await pendingResponse;
+    const returnedData = await pendingResponse as { order: OrderResponseData };
     console.log("returnedData: " + JSON.stringify(returnedData))
 
-    // @ts-ignore
-    return res.json({ message: 'Order Cancelled', filledQty: returnedData?.filledQty })
+    return res.json({ message: 'Order Cancelled', filledQty: returnedData?.order?.filledQty })
   } catch (error) {
     console.log(error)
     return res.status(500).json({ meessage: 'Internal Server Error' })
@@ -61,7 +65,7 @@ export const getOrderbyId = async (req: Request, res: Response) => {
     const ToEngine: EngineRequest = { payload, queueIdentifier, QUEUE_ID, userId, function: 'get_order' }
     await client.lPush('incoming-queue', JSON.stringify(ToEngine))
 
-    const returnedData = await pendingResponse;
+    const returnedData = await pendingResponse as { reqOrder: OrderResponseData };
     console.log("returnedData: " + JSON.stringify(returnedData))
 
     return res.json({ returnedData })
@@ -82,7 +86,7 @@ export const getBalance = async (req: Request, res: Response) => {
     const ToEngine: EngineRequest = { payload, queueIdentifier, QUEUE_ID, userId, function: 'get_user_balance' }
     await client.lPush('incoming-queue', JSON.stringify(ToEngine))
 
-    const returnedData = await pendingResponse;
+    const returnedData = await pendingResponse as { usd: BalanceData; btc: BalanceData; eth: BalanceData; sol: BalanceData };
     console.log("returnedData: " + JSON.stringify(returnedData))
 
     return res.json({ returnedData })
@@ -105,7 +109,7 @@ export const getDepthofAsset = async (req: Request, res: Response) => {
     const ToEngine: EngineRequest = { payload, queueIdentifier, QUEUE_ID, userId, function: 'get_depth' }
     await client.lPush('incoming-queue', JSON.stringify(ToEngine))
 
-    const returnedData = await pendingResponse;
+    const returnedData = await pendingResponse as { bids: Array<{ price: number; totalQty: number; totalOrders: number }>; asks: Array<{ price: number; totalQty: number; totalOrders: number }> };
     console.log("returnedData: " + JSON.stringify(returnedData))
 
     return res.json({ returnedData })

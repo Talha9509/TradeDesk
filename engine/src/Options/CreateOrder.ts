@@ -15,7 +15,6 @@ export const CreateOrder = (data: Record<string | number, any>, userId: number) 
   const reqAmount = data.side == "buy" ? (data.price * data.quantity) : data.quantity
   console.log(`Step 2.3: req amount ${reqAmount}`)
   if (available! < reqAmount) throw Error("No balance")
-  // if(!balance || balance.get('USD') == undefined) throw Error('No balance')
 
   const usd = balance?.get("USD")!;
   const assetBalance = balance?.get(asset)!;
@@ -50,7 +49,6 @@ export const CreateOrder = (data: Record<string | number, any>, userId: number) 
   }
   console.log(`Step 3.2: Incoming Order ${JSON.stringify(incomingOrder)}`)
   Orders.set(OrderId, incomingOrder)
-  // Orders.push(incomingOrder)
   console.log(`Step 3.3: Orders ${JSON.stringify(Orders)}`)
 
   // Matching algorithm:
@@ -68,21 +66,20 @@ export const CreateOrder = (data: Record<string | number, any>, userId: number) 
   console.log(`Step 4.1: opp book`)
   console.log(oppBook)
 
-  // const sortedPrices = Object.keys(oppBook).map(Number).sort((a, b) => incomingOrder.side == "buy" ? a-b : b-a)
   const sortedPrices = [...oppBook.keys()].sort((a, b) => incomingOrder.side == "buy" ? a - b : b - a)
   console.log(`Step 4.2: sorted prices ${sortedPrices}`)
+  if(sortedPrices.length == 0 && incomingOrder.type == 'market') incomingOrder.status = "Cancelled";
 
   const orderFill = []
   for(const levelPrice of sortedPrices){
     if(incomingOrder.filledQty >= incomingOrder.quantity) break
 
     const crosses = incomingOrder.type == "market" || 
-    (incomingOrder.side == "buy" && levelPrice <= incomingOrder.price) || 
+    (incomingOrder.type == 'limit' && incomingOrder.side == "buy" && levelPrice <= incomingOrder.price) || 
     (incomingOrder.side == "sell" && levelPrice >= incomingOrder.price)
     if(!crosses) break
 
     const level = oppBook.get(levelPrice)
-    // const level = oppBook[levelPrice]
     console.log(`Step 4.3: level ${JSON.stringify(level)}`)
 
     while(level?.orders != undefined && level.orders.length > 0 && incomingOrder.filledQty < incomingOrder.quantity){
@@ -90,7 +87,7 @@ export const CreateOrder = (data: Record<string | number, any>, userId: number) 
       console.log(`Step 4.4: maker Order ${JSON.stringify(makerOrder)}`)
 
       const incomingRemaining = incomingOrder.quantity - incomingOrder.filledQty
-      if(!makerOrder) throw Error('')
+      if(!makerOrder) continue;
       const makerRemaining = makerOrder.quantity - makerOrder.filledQty
       const matchedQty = Math.min(incomingRemaining, makerRemaining)
       console.log(`Step 4.5: matchedQty ${matchedQty}`)
@@ -151,7 +148,6 @@ export const CreateOrder = (data: Record<string | number, any>, userId: number) 
       }
     
     if(level?.orders.length == 0) oppBook.delete(levelPrice)
-    // if(level?.orders.length == 0) delete oppBook[levelPrice]
     console.log(`Step 4.11: level ${JSON.stringify(level)}`)
   }
   

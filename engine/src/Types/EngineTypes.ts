@@ -10,7 +10,7 @@ export type OrderType = {
   stockName: "SOL" | "BTC" | "ETH",
   type: "limit" | "market",
   side: "buy" | "sell",
-  price: number,
+  price: number | null,
   quantity: number
 }
 
