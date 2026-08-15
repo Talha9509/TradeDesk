@@ -36,7 +36,9 @@ export const CancelOrder = (data: Record<string | number, any>, userId: number) 
   const balance = getOrCreateBalance(userId)
   const usd = balance?.get("USD")!;
   const assetBalance = balance?.get(asset!)!;
+  let filled: "Cancelled" | "Partially-filled";
   if(reqOrder.filledQty == 0){
+    filled = "Cancelled"
     if(reqOrder?.side == 'buy'){
       usd.locked = usd.locked - (price! * reqOrder.quantity)
       usd.available = usd.available + (price! * reqOrder.quantity)
@@ -47,6 +49,7 @@ export const CancelOrder = (data: Record<string | number, any>, userId: number) 
       console.log(`4.1: asset locked: ${JSON.stringify(assetBalance.locked)}, asset available: ${JSON.stringify(assetBalance.available)}`)
     }
   } else {
+    filled = "Partially-filled"
     // partially filled
     if(reqOrder?.side == 'buy'){
       const fills = Fills.filter((fill) => fill.buyOrderId != orderId)
@@ -78,8 +81,8 @@ export const CancelOrder = (data: Record<string | number, any>, userId: number) 
     }
   }
 
-  // 5. then update order in orders with status cancelled and show filledQty
-  reqOrder.status = "Cancelled"
+  // 5. then update order in orders with status cancelled/partially-filled and show filledQty
+  reqOrder.status = filled
   console.log(`5: ${JSON.stringify(reqOrder)}`)
   
   // 6. update balance of user

@@ -8,7 +8,9 @@ export type OrderRecord = {
   type: "limit" | "market",
   side: "buy" | "sell",
   filledQty: number,
-  status: "Open" | "Filled" | "Cancelled",
+  status: "Open" | "Filled" | "Cancelled" | "Partially-filled",
+  // partially filled means some filled and cancelled
+  // open means some filled or not yet filled but order open
   fills: Fill[]
   createdAt: string
 }
