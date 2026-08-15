@@ -1,8 +1,9 @@
-import { type Order, OrderBook } from '../Types/types'
+import { OrderBook } from '../Types/types'
+import { type OrderRecord } from '../Types/OrderFillsType'
 
 // the ONLY function allowed to touch OrderBook[...][...][price].Orders directly.
 // used both for seeding test data and for resting a leftover limit order later.
-export default function restOrderOnBook(order: Order) {
+export default function restOrderOnBook(order: OrderRecord) {
   const side = order.side === "buy" ? "bids" : "asks"
   const marketBook = OrderBook.get(order.market)
   if (!marketBook) {
