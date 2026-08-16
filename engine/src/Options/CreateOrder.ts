@@ -87,6 +87,7 @@ export const CreateOrder = (data: Record<string | number, any>, userId: number) 
       const makerOrder = level.orders[0]
       if(incomingOrder.userId == makerOrder?.userId || !makerOrder) {
         console.log("can't trade with yourself")
+        level.orders.shift();
         continue;
       }
       console.log(`Step 4.4: maker Order ${JSON.stringify(makerOrder)}`)
