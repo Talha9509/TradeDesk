@@ -21,10 +21,10 @@ export const BuySell = async (req: Request, res: Response) => {
     const ToEngine: EngineRequest = { payload: data, queueIdentifier, QUEUE_ID, userId, function: 'create_order' }
     await client.lPush('incoming-queue', JSON.stringify(ToEngine))
 
-    const returnedData = await pendingResponse as { order: OrderResponseData; fills: any[] };
+    const returnedData = await pendingResponse as { order: OrderResponseData; fills: any[], message?: any };
     console.log("returnedData: "+JSON.stringify(returnedData))
   
-    return res.json({ message: 'Order placed', filledQty: returnedData?.order?.filledQty, status: returnedData.order.status, fills: returnedData.fills })
+    return res.json({ message: returnedData.message ? returnedData.message : 'Order placed', filledQty: returnedData?.order?.filledQty, status: returnedData.order.status, order: returnedData.order })
   } catch (error) {
     console.log(error)
     return res.status(500).json({ meessage: 'Internal Server Error' })

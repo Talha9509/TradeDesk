@@ -44,7 +44,7 @@ export default function seedEngine() {
     makeOrder(1, 'SOL', 'buy', 100, 5),
     makeOrder(2, 'SOL', 'sell', 101, 4),
     makeOrder(3, 'SOL', 'sell', 103, 8),
-    makeOrder(1, 'BTC', 'buy', 56000, 0.5),
+    makeOrder(1, 'BTC', 'buy', 56000, 5),
     makeOrder(2, 'BTC', 'sell', 57000, 1),
     makeOrder(3, 'ETH', 'buy', 1750, 4),
     makeOrder(4, 'ETH', 'sell', 1780, 6),
