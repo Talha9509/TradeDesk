@@ -1,10 +1,11 @@
-import type { Request, Response } from 'express'
+import type { NextFunction, Request, Response } from 'express'
 import { Order, type EngineRequest, type OrderResponseData, type BalanceData } from '../types/types'
 import { client } from '../config/redis'
 import { untilWeGetBack, QUEUE_ID } from '../utils/untilWeGetBack'
 
-export const BuySell = async (req: Request, res: Response) => {
-  const userId = req.userId!
+export const BuySell = async (req: Request, res: Response, next: NextFunction) => {
+  const userId = 90
+  // const userId = req.userId!
   const validatedInput = Order.safeParse(req.body)
   if (!validatedInput.success) return res.status(400).json({ message: "Invalid Inputs" })
   const data = {
@@ -24,15 +25,18 @@ export const BuySell = async (req: Request, res: Response) => {
     const returnedData = await pendingResponse as { order: OrderResponseData; fills: any[], message?: any };
     console.log("returnedData: "+JSON.stringify(returnedData))
   
-    return res.json({ message: returnedData.message ? returnedData.message : 'Order placed', filledQty: returnedData?.order?.filledQty, status: returnedData.order.status, order: returnedData.order })
+    return res.json({ message: returnedData.message ? returnedData.message : 'Order placed', filledQty: returnedData?.order?.filledQty, order: returnedData.order })
   } catch (error) {
+    if (error instanceof Error && error.message === 'No balance') {
+      return res.status(400).json({ success: false, message: 'Not enough balance' })
+    }
     console.log(error)
-    return res.status(500).json({ meessage: 'Internal Server Error' })
+    return next(error)
   }
 }
 
 
-export const DeleteOrder = async (req: Request, res: Response) => {
+export const DeleteOrder = async (req: Request, res: Response, next: NextFunction) => {
   const orderId = req.params.orderId as string
   const userId = req.userId!;
   const queueIdentifier = Math.round(Math.random() * 1000)
@@ -48,13 +52,16 @@ export const DeleteOrder = async (req: Request, res: Response) => {
 
     return res.json({ message: 'Order Cancelled', filledQty: returnedData?.order?.filledQty })
   } catch (error) {
+    if (error instanceof Error && error.message === "Can't Cancel the Order") {
+      return res.status(400).json({ success: false, message: "Can't Cancel the Order" })
+    }
     console.log(error)
-    return res.status(500).json({ meessage: 'Internal Server Error' })
+    return next(error)
   }
 }
 
 
-export const getOrderbyId = async (req: Request, res: Response) => {
+export const getOrderbyId = async (req: Request, res: Response, next: NextFunction) => {
   const orderId = req.params.orderId as string
   const userId = req.userId!
   const queueIdentifier = Math.round(Math.random() * 1000)
@@ -70,8 +77,11 @@ export const getOrderbyId = async (req: Request, res: Response) => {
 
     return res.json({ returnedData })
   } catch (error) {
+    if (error instanceof Error && error.message === "The Order does not belong to you") {
+      return res.status(400).json({ success: false, message: "The Order does not belong to you" })
+    }
     console.log(error)
-    return res.status(500).json({ meessage: 'Internal Server Error' })
+    return next(error)
   }
 }
 

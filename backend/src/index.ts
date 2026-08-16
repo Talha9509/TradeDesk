@@ -1,4 +1,4 @@
-import express from 'express'
+import express, { type Request, type Response, type NextFunction, type Errback } from 'express'
 import cookieParser from 'cookie-parser'
 import authRoutes from './routes/auth.Route'
 import orderRoutes from './routes/order.Route'
@@ -19,6 +19,13 @@ app.use(cookieParser())
 
 app.use("/auth/v1", authRoutes)
 app.use("/api/v1/order", orderRoutes)
+
+app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+  if (err instanceof Error) {
+    return res.status(500).json({ meessage: 'Internal Server Error' })
+  }
+  next(err);
+});
 
 app.listen( PORT, () => {
   console.log(`App running in port ${PORT}`)

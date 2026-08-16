@@ -17,8 +17,10 @@ async function pollQueue(){
     console.log(res)
     const data = res.data
     if(res.QUEUE_ID == QUEUE_ID){
-      if (res.queueIdentifier && pendingResolves[res.queueIdentifier]) {
-        pendingResolves[res.queueIdentifier](data)
+      if (res.ok == true && res.queueIdentifier && pendingResolves[res.queueIdentifier]) {
+        pendingResolves[res.queueIdentifier].resolve(data)
+      } else {
+        pendingResolves[res.queueIdentifier].reject(new Error(res.error))
       }
       pollQueue()
     }
@@ -28,6 +30,6 @@ pollQueue()
 
 export const untilWeGetBack = (identifier: any) => {
   return new Promise((resolve, reject) => {
-    pendingResolves[identifier] = resolve
+    pendingResolves[identifier] = { resolve, reject }
   })
 }
