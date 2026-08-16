@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TradeDesk Engine Dashboard</title>
+    <style>
+      :root {
+        --bg: #0f172a;
+        --panel: #111827;
+        --panel-2: #1f2937;
+        --header: #0b1220;
+        --text: #e5e7eb;
+        --muted: #94a3b8;
+        --ok: #22c55e;
+        --warn: #f59e0b;
+        --bad: #ef4444;
+        --border: #334155;
+        --accent: #38bdf8;
+      }
+
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+      }
+
+      .container {
+        max-width: 1500px;
+        margin: 0 auto;
+        padding: 24px;
+      }
+
+      h1 {
+        margin: 0 0 20px;
+        font-size: 2rem;
+      }
+
+      .summary {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 12px;
+        margin-bottom: 24px;
+      }
+
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 16px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+      }
+
+      .card h3 {
+        margin: 0 0 8px;
+        font-size: 0.8rem;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      .big {
+        font-size: 1.7rem;
+        font-weight: bold;
+      }
+
+      .section {
+        margin-top: 28px;
+      }
+
+      .section-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 12px;
+      }
+
+      .section-header h2 {
+        margin: 0;
+        font-size: 1.4rem;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        overflow: hidden;
+      }
+
+      th, td {
+        border-bottom: 1px solid var(--border);
+        padding: 10px 12px;
+        text-align: left;
+        vertical-align: top;
+      }
+
+      th {
+        background: var(--header);
+        color: var(--muted);
+        font-size: 0.78rem;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+      }
+
+      tr:nth-child(even) td {
+        background: rgba(255, 255, 255, 0.02);
+      }
+
+      .book-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+        gap: 20px;
+      }
+
+      .book-side {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        overflow: hidden;
+      }
+
+      .book-side h3 {
+        margin: 0;
+        padding: 12px 16px;
+        background: var(--header);
+        border-bottom: 1px solid var(--border);
+      }
+
+      .muted {
+        color: var(--muted);
+      }
+
+      .status-pill {
+        display: inline-block;
+        padding: 4px 8px;
+        border-radius: 999px;
+        font-size: 0.72rem;
+        font-weight: bold;
+      }
+
+      .status-open { background: rgba(34, 197, 94, 0.12); color: var(--ok); }
+      .status-filled { background: rgba(56, 189, 248, 0.12); color: var(--accent); }
+      .status-cancelled { background: rgba(239, 68, 68, 0.12); color: var(--bad); }
+      .status-partially { background: rgba(245, 158, 11, 0.12); color: var(--warn); }
+
+      .asset-cell {
+        min-width: 180px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>TradeDesk Engine Dashboard</h1>
+
+      <div class="summary" id="summary"></div>
+
+      <div class="section">
+        <div class="section-header">
+          <h2>Balances</h2>
+        </div>
+        <div style="overflow-x:auto;">
+          <table id="balances-table"></table>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-header">
+          <h2>Order Book</h2>
+        </div>
+        <div class="book-grid" id="orderbook-grid"></div>
+      </div>
+
+      <div class="section">
+        <div class="section-header">
+          <h2>Orders</h2>
+        </div>
+        <div style="overflow-x:auto;">
+          <table id="orders-table"></table>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-header">
+          <h2>Fills</h2>
+        </div>
+        <div style="overflow-x:auto;">
+          <table id="fills-table"></table>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const stateUrl = '/dashboard';
+
+      const formatNumber = (value) => Number(value ?? 0).toLocaleString(undefined, { maximumFractionDigits: 6 });
+
+      function renderSummary(summary) {
+        const cards = [
+          ['Users', summary.users],
+          ['Markets', summary.markets],
+          ['Orders', summary.orders],
+          ['Fills', summary.fills],
+        ];
+
+        const root = document.getElementById('summary');
+        root.innerHTML = cards.map(([label, value]) => `
+          <div class="card">
+            <h3>${label}</h3>
+            <div class="big">${value}</div>
+          </div>
+        `).join('');
+      }
+
+      function renderBalances(balances) {
+        const assets = ['USD', 'SOL', 'BTC', 'ETH'];
+
+        const rows = (balances || []).map((row) => {
+          const cells = [
+            `<td>${row.userId}</td>`,
+            ...assets.flatMap((asset) => [
+              `<td>${formatNumber(row[asset]?.available ?? 0)}</td>`,
+              `<td>${formatNumber(row[asset]?.locked ?? 0)}</td>`,
+            ]),
+          ].join('');
+
+          return `<tr>${cells}</tr>`;
+        }).join('');
+
+        const table = document.getElementById('balances-table');
+        table.innerHTML = `
+          <thead>
+            <tr>
+              <th>User ID</th>
+              ${assets.flatMap((asset) => [
+                `<th>${asset} Available</th>`,
+                `<th>${asset} Locked</th>`,
+              ]).join('')}
+            </tr>
+          </thead>
+          <tbody>${rows || '<tr><td colspan="9">No balances</td></tr>'}</tbody>
+        `;
+      }
+
+      function renderOrderbook(orderbook) {
+        const markets = Object.entries(orderbook || {});
+        const root = document.getElementById('orderbook-grid');
+
+        root.innerHTML = markets.map(([market, book]) => `
+          <div class="book-side">
+            <h3>${market}</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>Side</th>
+                  <th>Price</th>
+                  <th>Total Qty</th>
+                  <th>Orders</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${['bids', 'asks'].map(side => {
+                  const levels = book[side] || [];
+                  return levels.length ? levels.map(level => `
+                    <tr>
+                      <td>${side}</td>
+                      <td>${formatNumber(level.price)}</td>
+                      <td>${formatNumber(level.totalQty)}</td>
+                      <td>${level.orderCount}</td>
+                    </tr>
+                  `).join('') : `<tr><td colspan="4" class="muted">No ${side}</td></tr>`;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>
+        `).join('');
+      }
+
+      function renderOrders(orders) {
+        const table = document.getElementById('orders-table');
+        table.innerHTML = `
+          <thead>
+            <tr>
+              <th>Order ID</th>
+              <th>User</th>
+              <th>Market</th>
+              <th>Side</th>
+              <th>Type</th>
+              <th>Price</th>
+              <th>Qty</th>
+              <th>Filled</th>
+              <th>Remaining</th>
+              <th>Status</th>
+              <th>Created</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${orders.map(order => `
+              <tr>
+                <td>${order.orderId}</td>
+                <td>${order.userId}</td>
+                <td>${order.market}</td>
+                <td>${order.side}</td>
+                <td>${order.type}</td>
+                <td>${formatNumber(order.price)}</td>
+                <td>${formatNumber(order.quantity)}</td>
+                <td>${formatNumber(order.filledQty)}</td>
+                <td>${formatNumber(order.remainingQty)}</td>
+                <td><span class="status-pill status-${order.status.toLowerCase().replace(/[^a-z]+/g, '-')}">${order.status}</span></td>
+                <td>${new Date(order.createdAt).toLocaleString()}</td>
+              </tr>
+            `).join('') || '<tr><td colspan="11">No orders</td></tr>'}
+          </tbody>
+        `;
+      }
+
+      function renderFills(fills) {
+        const table = document.getElementById('fills-table');
+        table.innerHTML = `
+          <thead>
+            <tr>
+              <th>Fill ID</th>
+              <th>Asset</th>
+              <th>Price</th>
+              <th>Qty</th>
+              <th>Buyer</th>
+              <th>Seller</th>
+              <th>Buy Order</th>
+              <th>Sell Order</th>
+              <th>Created</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${fills.map(fill => `
+              <tr>
+                <td>${fill.fillId}</td>
+                <td>${fill.asset}</td>
+                <td>${formatNumber(fill.price)}</td>
+                <td>${formatNumber(fill.quantity)}</td>
+                <td>${fill.buyerId ?? '-'}</td>
+                <td>${fill.sellerId ?? '-'}</td>
+                <td>${fill.buyOrderId}</td>
+                <td>${fill.sellOrderId}</td>
+                <td>${new Date(fill.createdAt).toLocaleString()}</td>
+              </tr>
+            `).join('') || '<tr><td colspan="9">No fills</td></tr>'}
+          </tbody>
+        `;
+      }
+
+      async function loadDashboard() {
+        try {
+          const response = await fetch(stateUrl, { cache: 'no-store' });
+          if (!response.ok) {
+            throw new Error('Failed to load dashboard');
+          }
+          const data = await response.json();
+          renderSummary(data.summary || { users: 0, markets: 0, orders: 0, fills: 0 });
+          renderBalances(data.balances || []);
+          renderOrderbook(data.orderbook || {});
+          renderOrders(data.orders || []);
+          renderFills(data.fills || []);
+        } catch (error) {
+          console.error(error);
+          document.body.innerHTML = `<div style="padding: 40px; color: white;">Unable to load engine dashboard. Start the engine and ensure the dashboard endpoint is running on port 3001.</div>`;
+        }
+      }
+
+      setInterval(loadDashboard, 1500);
+      loadDashboard();
+    </script>
+  </body>
+</html>
