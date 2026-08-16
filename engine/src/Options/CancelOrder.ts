@@ -9,7 +9,9 @@ export const CancelOrder = (data: Record<string | number, any>, userId: number) 
   const reqOrder = Orders.get(orderId)
   // const reqOrder = Orders.find((order) => order.id == orderId)
   console.log(`0. Required order: ${JSON.stringify(reqOrder)}`)
-  
+
+  if(reqOrder?.userId != userId) throw Error("Can't Cancel the Order");
+
   // 1. the order must be limit order only & 2. the status of order must be open
   const MarketOrOpen = reqOrder?.type == 'market' && reqOrder?.status != 'Open'
   console.log(`1. market or open: ${MarketOrOpen}`)
