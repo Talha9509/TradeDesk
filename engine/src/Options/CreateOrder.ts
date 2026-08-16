@@ -183,6 +183,8 @@ export const CreateOrder = (data: Record<string | number, any>, userId: number) 
     console.log(`Step 4.11: level ${JSON.stringify(level)}`)
   }
   
+  if(incomingOrder.type == 'market' && incomingOrder.side == 'sell' && incomingOrder.filledQty > 0) incomingOrder.status = 'Partially-filled' 
+
   if(incomingOrder.filledQty < incomingOrder.quantity && incomingOrder.type == "limit"){
     restOrderOnBook(incomingOrder)
     console.log(`Step 4.12: rest on orderbook`)
