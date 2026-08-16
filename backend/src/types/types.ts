@@ -15,7 +15,7 @@ export const Order = z.object({
   type: z.enum(["limit", "market"]),
   side: z.enum(["buy", "sell"]),
   price: z.number().nullable(),
-  quantity: z.number()
+  quantity: z.number().int().positive()
 }).superRefine((data, ctx) => {
   if(data.type == "limit"){
     if(!data.price || data.price <= 0){
