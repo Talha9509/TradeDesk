@@ -26,9 +26,13 @@ export const CancelOrder = (data: Record<string | number, any>, userId: number) 
   const BookSide = market?.[asksOrbids]
   const priceLevel = BookSide?.get(price!)
   if(!priceLevel || !reqOrder) throw Error("Can't Cancel the Order")
-    const remainQty = reqOrder?.quantity - reqOrder?.filledQty
+  const remainQty = reqOrder?.quantity - reqOrder?.filledQty
   priceLevel.totalQty = priceLevel.totalQty - remainQty
-  priceLevel.orders.filter((order) => order.orderId != orderId)
+  const newOrders = priceLevel.orders.filter((order) => order.orderId != orderId)
+  priceLevel.orders = newOrders
+  if(priceLevel.orders.length == 0 && priceLevel.totalQty == 0){
+    BookSide?.delete(price)
+  }
   console.log(`3.2: priceLevel: ${JSON.stringify(priceLevel)}`)
   
   // 4. 
