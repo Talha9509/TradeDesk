@@ -3,6 +3,7 @@ import type { EngineRequest, EngineResponse } from './Types/EngineTypes'
 import { subscriberClient, publisherClient } from './config/redis'
 import seedEngine from './utils/seed'
 import { getDashboardState } from './utils/dashboardState'
+import loadEngineState from './snapshot/loadEngineState'
 
 const html = await Bun.file(new URL('../index.html', import.meta.url)).text()
 
@@ -47,9 +48,10 @@ Bun.serve({
 
 console.log(`Engine dashboard running on http://localhost:${port}`)
 
-seedEngine()
+export let lastId = await loadEngineState()
 
-export let lastId = '$'
+// seedEngine()
+
 while (1) {
   const response = await subscriberClient.xRead({ key: 'backend_to_engine', id: lastId }, { COUNT: 5, BLOCK: 100 })
   const stream = response?.[0]
