@@ -9,8 +9,6 @@ export type OrderRecord = {
   side: "buy" | "sell",
   filledQty: number,
   status: "Open" | "Filled" | "Cancelled" | "Partially_filled",
-  // partially filled means some filled and cancelled
-  // open means some filled or not yet filled but order open
   fills: Fill[]
   createdAt: string
 }
@@ -19,7 +17,6 @@ export const Orders = new Map<string, OrderRecord>()
 export type Fill = { 
   quantity: number, 
   side: "buy" | "sell", 
-  // type: "maker" | "taker", 
   userId: number, 
   price: number, 
   asset: "SOL" | "BTC" | "ETH", 
@@ -29,3 +26,24 @@ export type Fill = {
   createdAt: string 
 }
 export const Fills: Fill[] = []
+
+export type availLocked = { 
+  available: number, 
+  locked: number
+}
+
+export type balanceMarket = 'SOL' | 'BTC' | 'ETH' | 'USD'
+type balance = Map<balanceMarket, availLocked>
+type userId = number
+
+export const Balances: Map<userId, balance> = new Map()
+
+export type response = { 
+  userId: number,
+  order: OrderRecord, 
+  otherOrders?: OrderRecord[] | null, 
+  fills: Fill[] | null, 
+  buyerBalance: string, 
+  sellerBalance?: string | null,
+  createOrCancel: string
+}

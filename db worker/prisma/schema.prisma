@@ -60,19 +60,20 @@ model Orders {
   filledQty     Int
   status       Status
   createdAt   DateTime
-  fills        Fills[]
+  BuyFills     Fills[]   @relation("buy")
+  SellFills    Fills[]   @relation("sell")
 }
 
 model Fills {
   fillId      String    @id  
-  orderId     String
-  order       Orders    @relation(fields: [orderId], references: [orderId])
   quantity     Int
   side         Side 
   userId        Int 
   price         Int 
   asset        Asset 
-  buyOrderId   String
+  buyOrderId   String     
+  buyOrder     Orders    @relation("buy", fields: [buyOrderId], references: [orderId])
   sellOrderId  String
+  sellOrder    Orders    @relation("sell", fields: [sellOrderId], references: [orderId])
   createdAt    DateTime 
 }

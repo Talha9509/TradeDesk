@@ -6,7 +6,7 @@ export type availLocked = {
 }
 
 export type balanceMarket = 'SOL' | 'BTC' | 'ETH' | 'USD'
-type balance = Map<balanceMarket, availLocked>
+export type balance = Map<balanceMarket, availLocked>
 type userId = number
 
 export const Balances: Map<userId, balance> = new Map()

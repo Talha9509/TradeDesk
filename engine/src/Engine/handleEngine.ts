@@ -2,10 +2,10 @@ import { CreateOrder } from '../Options/CreateOrder'
 import { CancelOrder } from '../Options/CancelOrder'
 import { GetOrder } from '../Options/GetOrder'
 import { GetBalance } from '../Options/GetBalance'
-import { engTodb, type EngineRequest } from '../Types/EngineTypes'
+import { type EngineRequest } from '../Types/EngineTypes'
 import { GetDepth } from '../Options/GetDepth'
 import snapshot from '../snapshot/snapshot'
-import { dbClient } from '../config/redis'
+import EngTodb from '../utils/EngTodb'
 
 export default async function handleEngine(engineReq: EngineRequest) {
   if(engineReq.function == 'create_order'){
@@ -14,17 +14,20 @@ export default async function handleEngine(engineReq: EngineRequest) {
       console.error("Snapshot failed:", err);
     });
 
-    await dbClient.xAdd(engTodb, '*', { abc: 'abc' })
-    return result
+    EngTodb(result)
+    console.log({ order: result.order, fills: result.fills })
+    return { order: result.order, fills: result.fills }
   }
-
+  
   else if(engineReq.function == 'cancel_order'){
     const result = await CancelOrder(engineReq.payload, engineReq.userId)
     console.log(result)
     snapshot().catch((err) => {
       console.error("Snapshot failed:", err);
     });
-    return result
+
+    EngTodb(result)
+    return { order: result.order }
   }
 
   else if(engineReq.function == 'get_order'){

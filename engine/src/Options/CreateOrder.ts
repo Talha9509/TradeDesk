@@ -4,6 +4,9 @@ import getOrCreateBalance from "../utils/getOrCreateBalance";
 import restOrderOnBook from '../utils/restOrderonBook'
 
 export const CreateOrder = (data: Record<string | number, any>, userId: number) => {
+  let buyerBalance;
+  let sellerBalance;
+  let otherOrders: OrderRecord[] = [];
   // 2. check balance of user if he has money for req quantity, stock for selling
   const asset =  data.stockName
   const balance = getOrCreateBalance(userId!)
@@ -101,8 +104,8 @@ export const CreateOrder = (data: Record<string | number, any>, userId: number) 
       const reqAmountt = matchedQty * makerOrder.price
       if (incomingOrder.type == 'market') {
         if (matchedQty == 0 || (incomingOrder.side == 'buy' && reqAmountt > usd?.available!)) {
-          incomingOrder.status = incomingOrder.filledQty > 0 ? "Partially-filled" : 'Cancelled';
-          return { order: incomingOrder, fills: orderFill, message: incomingOrder.filledQty > 0 && 'Not enough balance, so order is partially filled' }
+          incomingOrder.status = incomingOrder.filledQty > 0 ? "Partially_filled" : 'Cancelled';
+          return { order: incomingOrder, fills: orderFill, message: incomingOrder.filledQty > 0 && 'Not enough balance, so order is partially filled', userId, buyerBalance, otherOrders, sellerBalance, createOrCancel: 'create' }
         }
       }
 
@@ -127,14 +130,15 @@ export const CreateOrder = (data: Record<string | number, any>, userId: number) 
       Fills.push(Fill)
       incomingOrder.fills.push(Fill)
       makerOrder.fills.push(Fill)
+      otherOrders.push(makerOrder)
       orderFill.push(Fill)
       // Fills.push({ quantity: matchedQty, side: makerOrder.side, type: "maker", userId: makerOrder.userId, price: levelPrice, asset: asset, orderId: makerOrder.id, createdAt: now })
       console.log(`Step 4.7: fills ${JSON.stringify(Fills)}`)
 
       const buyerId = data.side == "buy" ? incomingOrder.userId : makerOrder.userId
       const sellerId = data.side == "buy" ? makerOrder.userId : incomingOrder.userId
-      const buyerBalance = getOrCreateBalance(buyerId)
-      const sellerBalance = getOrCreateBalance(sellerId)
+      buyerBalance = getOrCreateBalance(buyerId)
+      sellerBalance = getOrCreateBalance(sellerId)
       console.log(`Step 4.8: buyerbalance, sellerbalance`)
       console.log(buyerBalance)
       console.log(sellerBalance)
@@ -184,7 +188,7 @@ export const CreateOrder = (data: Record<string | number, any>, userId: number) 
     console.log(`Step 4.11: level ${JSON.stringify(level)}`)
   }
   
-  if(incomingOrder.type == 'market' && incomingOrder.side == 'sell' && incomingOrder.filledQty > 0) incomingOrder.status = 'Partially-filled' 
+  if(incomingOrder.type == 'market' && incomingOrder.side == 'sell' && incomingOrder.filledQty > 0) incomingOrder.status = 'Partially_filled' 
 
   if(incomingOrder.filledQty < incomingOrder.quantity && incomingOrder.type == "limit"){
     restOrderOnBook(incomingOrder)
@@ -193,7 +197,7 @@ export const CreateOrder = (data: Record<string | number, any>, userId: number) 
 
   console.log(`Step last: Balance `)
   console.log(balance)
-  return { order: incomingOrder, fills: orderFill }
+  return { order: incomingOrder, otherOrders: otherOrders.length > 0 ? otherOrders : null, fills: orderFill.length > 0 ? orderFill : null, buyerBalance: buyerBalance != undefined ? buyerBalance : balance, sellerBalance, userId, createOrCancel: 'create' }
 
   // 4. 
     // i. for market:
@@ -206,4 +210,5 @@ export const CreateOrder = (data: Record<string | number, any>, userId: number) 
       // 1. match the orderbook
       // 2. if not then sit on orderbook and update
       // 3. if any order matches then update order and fill
+  // 5. update balance of user, orders table of both incoming and other order, fills table in db
 }
