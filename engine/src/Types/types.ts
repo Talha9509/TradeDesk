@@ -7,8 +7,9 @@ export type availLocked = {
 
 export type balanceMarket = 'SOL' | 'BTC' | 'ETH' | 'USD'
 type balance = Map<balanceMarket, availLocked>
+type userId = number
 
-export const Balances: Map<number, balance> = new Map()
+export const Balances: Map<userId, balance> = new Map()
 
 type PriceLevel = { totalQty: number, orders: OrderRecord[] }
 

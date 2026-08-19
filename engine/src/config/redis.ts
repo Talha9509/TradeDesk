@@ -7,3 +7,8 @@ export const subscriberClient = await createClient()
 export const publisherClient = await createClient()
   .on("error", (err) => console.log('Error connecting to redis', err))
   .connect()
+
+  export const storeClient = await createClient()
+  .on("error", (err) => console.log('Error connecting to redis', err))
+  .connect()
+
