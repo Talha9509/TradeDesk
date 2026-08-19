@@ -6,7 +6,7 @@ let changesCount = 0;
 export default async function snapshot() {
   changesCount++
 
-  if (changesCount % 2 !== 0) return
+  if (changesCount % 50 !== 0) return
   await persistData(lastId)
 
   try {
