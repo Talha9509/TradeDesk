@@ -27,3 +27,5 @@ export type EngineResponse = {
   error?: string;
   Identifier: number, 
 }
+
+export const engTodb = 'engine_to_db'

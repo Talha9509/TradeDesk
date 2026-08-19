@@ -2,9 +2,10 @@ import { CreateOrder } from '../Options/CreateOrder'
 import { CancelOrder } from '../Options/CancelOrder'
 import { GetOrder } from '../Options/GetOrder'
 import { GetBalance } from '../Options/GetBalance'
-import { type EngineRequest } from '../Types/EngineTypes'
+import { engTodb, type EngineRequest } from '../Types/EngineTypes'
 import { GetDepth } from '../Options/GetDepth'
 import snapshot from '../snapshot/snapshot'
+import { dbClient } from '../config/redis'
 
 export default async function handleEngine(engineReq: EngineRequest) {
   if(engineReq.function == 'create_order'){
@@ -12,6 +13,8 @@ export default async function handleEngine(engineReq: EngineRequest) {
     snapshot().catch((err) => {
       console.error("Snapshot failed:", err);
     });
+
+    await dbClient.xAdd(engTodb, '*', { abc: 'abc' })
     return result
   }
 
