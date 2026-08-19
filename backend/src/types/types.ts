@@ -30,8 +30,7 @@ export const Order = z.object({
 
 export type EngineRequest = {
   payload: Record<string | number, any>,
-  queueIdentifier: number, 
-  QUEUE_ID: number, 
+  Identifier: number, 
   userId: number,
   function: EngineCommandType
 }
@@ -59,8 +58,7 @@ export type EngineResponse = {
   ok: boolean;
   data?: Record<string, any>;
   error?: string;
-  queueIdentifier: number, 
-  QUEUE_ID: number,
+  Identifier: number, 
 }
 
 export type EngineCommandType =
@@ -69,3 +67,10 @@ export type EngineCommandType =
   | "get_user_balance"
   | "get_order"
   | "get_depth"
+
+export type MessageType = {
+    id: string,
+    message: {
+      ToBackendStringified: string
+    }
+}[]

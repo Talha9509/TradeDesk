@@ -1,7 +1,7 @@
 import type { NextFunction, Request, Response } from 'express'
 import { Order, type EngineRequest, type OrderResponseData, type BalanceData } from '../types/types'
 import { client } from '../config/redis'
-import { untilWeGetBack, QUEUE_ID } from '../utils/untilWeGetBack'
+import { untilWeGetBack, betoEngKey } from '../utils/untilWeGetBack'
 
 export const BuySell = async (req: Request, res: Response, next: NextFunction) => {
   const userId = req.userId!
@@ -14,12 +14,14 @@ export const BuySell = async (req: Request, res: Response, next: NextFunction) =
     price: validatedInput.data.type == 'limit' ? validatedInput.data.price : null,
     quantity: validatedInput.data.quantity
   }
-  const queueIdentifier = Math.round(Math.random() * 1000)
+  const Identifier = Math.round(Math.random() * 1000)
   
   try {
-    const pendingResponse = untilWeGetBack(queueIdentifier)
-    const ToEngine: EngineRequest = { payload: data, queueIdentifier, QUEUE_ID, userId, function: 'create_order' }
-    await client.lPush('incoming-queue', JSON.stringify(ToEngine))
+    const pendingResponse = untilWeGetBack(Identifier)
+    const ToEngine: EngineRequest = { payload: data, Identifier, userId, function: 'create_order' }
+    const ToEngineStringified = JSON.stringify(ToEngine)
+    const response = await client.xAdd(betoEngKey, '*', { ToEngineStringified })
+    console.log(response)
 
     const returnedData = await pendingResponse as { order: OrderResponseData; fills: any[], message?: any };
     console.log("returnedData: "+JSON.stringify(returnedData))
@@ -38,13 +40,15 @@ export const BuySell = async (req: Request, res: Response, next: NextFunction) =
 export const DeleteOrder = async (req: Request, res: Response, next: NextFunction) => {
   const orderId = req.params.orderId as string
   const userId = req.userId!;
-  const queueIdentifier = Math.round(Math.random() * 1000)
+  const Identifier = Math.round(Math.random() * 1000)
   const payload = { orderId: orderId }
   
   try {
-    const pendingResponse = untilWeGetBack(queueIdentifier)
-    const ToEngine: EngineRequest = { payload, queueIdentifier, QUEUE_ID, userId, function: 'cancel_order' }
-    await client.lPush('incoming-queue', JSON.stringify(ToEngine))
+    const pendingResponse = untilWeGetBack(Identifier)
+    const ToEngine: EngineRequest = { payload, Identifier, userId, function: 'cancel_order' }
+    const ToEngineStringified = JSON.stringify(ToEngine)
+    const response = await client.xAdd(betoEngKey, '*', { ToEngineStringified })
+    console.log(response)
 
     const returnedData = await pendingResponse as { order: OrderResponseData };
     console.log("returnedData: " + JSON.stringify(returnedData))
@@ -63,13 +67,15 @@ export const DeleteOrder = async (req: Request, res: Response, next: NextFunctio
 export const getOrderbyId = async (req: Request, res: Response, next: NextFunction) => {
   const orderId = req.params.orderId as string
   const userId = req.userId!
-  const queueIdentifier = Math.round(Math.random() * 1000)
+  const Identifier = Math.round(Math.random() * 1000)
   const payload = { orderId: orderId }
   
   try {
-    const pendingResponse = untilWeGetBack(queueIdentifier)
-    const ToEngine: EngineRequest = { payload, queueIdentifier, QUEUE_ID, userId, function: 'get_order' }
-    await client.lPush('incoming-queue', JSON.stringify(ToEngine))
+    const pendingResponse = untilWeGetBack(Identifier)
+    const ToEngine: EngineRequest = { payload, Identifier, userId, function: 'get_order' }
+    const ToEngineStringified = JSON.stringify(ToEngine)
+    const response = await client.xAdd(betoEngKey, '*', { ToEngineStringified })
+    console.log(response)
 
     const returnedData = await pendingResponse as { reqOrder: OrderResponseData };
     console.log("returnedData: " + JSON.stringify(returnedData))
@@ -87,13 +93,16 @@ export const getOrderbyId = async (req: Request, res: Response, next: NextFuncti
 
 export const getBalance = async (req: Request, res: Response) => {
   const userId = req.userId!
-  const queueIdentifier = Math.round(Math.random() * 1000)
+  const Identifier = Math.round(Math.random() * 1000)
   const payload = { userId }
   
   try {
-    const pendingResponse = untilWeGetBack(queueIdentifier)
-    const ToEngine: EngineRequest = { payload, queueIdentifier, QUEUE_ID, userId, function: 'get_user_balance' }
-    await client.lPush('incoming-queue', JSON.stringify(ToEngine))
+    const pendingResponse = untilWeGetBack(Identifier)
+    const ToEngine: EngineRequest = { payload, Identifier, userId, function: 'get_user_balance' }
+    const ToEngineStringified = JSON.stringify(ToEngine)
+    const response = await client.xAdd(betoEngKey, '*', { ToEngineStringified })
+    console.log(response)
+    // await client.lPush('incoming-queue', JSON.stringify(ToEngine))
 
     const returnedData = await pendingResponse as { usd: BalanceData; btc: BalanceData; eth: BalanceData; sol: BalanceData };
     console.log("returnedData: " + JSON.stringify(returnedData))
@@ -111,12 +120,14 @@ export const getDepthofAsset = async (req: Request, res: Response) => {
   try {
     type assetType = 'SOL' | 'BTC' | 'ETH'
     const asset: assetType = req.params.asset as assetType
-    const queueIdentifier = Math.round(Math.random() * 1000)
+    const Identifier = Math.round(Math.random() * 1000)
     const payload = { asset: asset }
   
-    const pendingResponse = untilWeGetBack(queueIdentifier)
-    const ToEngine: EngineRequest = { payload, queueIdentifier, QUEUE_ID, userId, function: 'get_depth' }
-    await client.lPush('incoming-queue', JSON.stringify(ToEngine))
+    const pendingResponse = untilWeGetBack(Identifier)
+    const ToEngine: EngineRequest = { payload, Identifier, userId, function: 'get_depth' }
+    const ToEngineStringified = JSON.stringify(ToEngine)
+    const response = await client.xAdd(betoEngKey, '*', { ToEngineStringified })
+    console.log(response)
 
     const returnedData = await pendingResponse as { bids: Array<{ price: number; totalQty: number; totalOrders: number }>; asks: Array<{ price: number; totalQty: number; totalOrders: number }> };
     console.log("returnedData: " + JSON.stringify(returnedData))

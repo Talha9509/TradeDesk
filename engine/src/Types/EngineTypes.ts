@@ -16,8 +16,7 @@ export type OrderType = {
 
 export type EngineRequest = {
   payload: Record<string | number, any>,
-  queueIdentifier: number, 
-  QUEUE_ID: number, 
+  Identifier: number, 
   userId: number,
   function: EngineCommandType
 }
@@ -26,6 +25,5 @@ export type EngineResponse = {
   ok: boolean;
   data?: unknown;
   error?: string;
-  queueIdentifier: number, 
-  QUEUE_ID: number,
+  Identifier: number, 
 }

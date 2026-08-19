@@ -1,29 +1,42 @@
 import { subscriberClient } from '../config/redis'
 import type { EngineResponse } from '../types/types'
-// i want
-// one while loop to get all data from queue
+import createConsumerGroup from '../utils/createConsumerGroup'
+import { type MessageType } from '../types/types'
 
 let pendingResolves: Record<number, any> = {}
-export const QUEUE_ID = Math.round(Math.random() * 100)
+export const GROUP_ID = Math.round(Math.random() * 100)
+export const betoEngKey = 'backend_to_engine'
+const streamKey = 'engine_to_backend'
+const groupName = `backend-${GROUP_ID}`
+const consumerName = `worker_${process.pid}`; 
+
+await createConsumerGroup(streamKey, groupName)
 
 async function pollQueue(){
-  const response = await subscriberClient.brPop('response-queue-' + QUEUE_ID, 5)
+  const response = await subscriberClient.xReadGroup(groupName, consumerName, 
+    { key: streamKey, id: '>'}, 
+    { COUNT: 2, BLOCK: 5 }
+  )
+  // const response = await subscriberClient.brPop('response-queue-' + QUEUE_ID, 5)
   if (!response) {
     pollQueue()
   } else {
-    console.log(response)
+    const messages: MessageType = response?.[0]?.messages
+    console.log(messages)
   
-    const res: EngineResponse = await JSON.parse(response.element)
-    console.log(res)
-    const data = res.data
-    if(res.QUEUE_ID == QUEUE_ID){
-      if (res.ok == true && res.queueIdentifier && pendingResolves[res.queueIdentifier]) {
-        pendingResolves[res.queueIdentifier].resolve(data)
-      } else {
-        pendingResolves[res.queueIdentifier].reject(new Error(res.error))
+    for(const message of messages){
+      const res: EngineResponse = JSON.parse(message.message.ToBackendStringified)
+      console.log(res)
+      const data = res.data
+      if(res.Identifier && pendingResolves[res.Identifier]){
+        if (res.ok == true) {
+          pendingResolves[res.Identifier].resolve(data)
+        } else {
+          pendingResolves[res.Identifier].reject(new Error(res.error))
+        }
       }
-      pollQueue()
     }
+    pollQueue()
   }
 }
 pollQueue()
