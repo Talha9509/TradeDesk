@@ -5,9 +5,74 @@
 
 generator client {
   provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  output   = "../generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
+}
+
+enum Asset {
+  BTC
+  SOL
+  ETH
+}
+
+enum Side {
+  buy
+  sell
+}
+
+enum Type {
+  limit
+  market
+}
+
+enum Status {
+  Open
+  Filled
+  Cancelled
+  Partially_filled
+}
+
+model Balances {
+  userId       Int      @id   @unique
+  SOL_avail    Int
+  SOL_lock     Int
+  ETH_avail    Int
+  ETH_lock     Int
+  USD_avail    Int
+  USD_lock     Int
+  BTC_avail    Int
+  BTC_lock     Int
+  Orders      Orders[]
+}
+
+model Orders {
+  orderId     String     @id  
+  userId       Int
+  user       Balances    @relation(fields: [userId], references: [userId])
+  market      Asset
+  price        Int
+  quantity     Int
+  type         Type
+  side         Side
+  filledQty     Int
+  status       Status
+  createdAt   DateTime
+  fills        Fills[]
+}
+
+model Fills {
+  fillId      String    @id  
+  orderId     String
+  order       Orders    @relation(fields: [orderId], references: [orderId])
+  quantity     Int
+  side         Side 
+  userId        Int 
+  price         Int 
+  asset        Asset 
+  buyOrderId   String
+  sellOrderId  String
+  createdAt    DateTime 
 }
