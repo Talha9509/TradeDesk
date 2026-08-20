@@ -6,6 +6,7 @@ import { type EngineRequest } from '../Types/EngineTypes'
 import { GetDepth } from '../Options/GetDepth'
 import snapshot from '../snapshot/snapshot'
 import EngTodb from '../utils/EngTodb'
+import EngToWS from '../utils/EngToWS'
 
 export default async function handleEngine(engineReq: EngineRequest) {
   if(engineReq.function == 'create_order'){
@@ -14,6 +15,7 @@ export default async function handleEngine(engineReq: EngineRequest) {
       console.error("Snapshot failed:", err);
     });
 
+    EngToWS()
     EngTodb(result)
     console.log({ order: result.order, fills: result.fills })
     return { order: result.order, fills: result.fills }
@@ -26,6 +28,7 @@ export default async function handleEngine(engineReq: EngineRequest) {
       console.error("Snapshot failed:", err);
     });
 
+    EngToWS()
     EngTodb(result)
     return { order: result.order }
   }

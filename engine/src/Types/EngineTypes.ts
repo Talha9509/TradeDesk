@@ -29,3 +29,4 @@ export type EngineResponse = {
 }
 
 export const engTodb = 'engine_to_db'
+export const engToWS = 'engine_to_ws'

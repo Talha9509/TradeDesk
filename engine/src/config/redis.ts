@@ -16,3 +16,7 @@ export const dbClient = await createClient()
   .on("error", (err) => console.log('Error connecting to redis', err))
   .connect()
 
+export const streamClient = await createClient()
+  .on("error", (err) => console.log('Error connecting to redis', err))
+  .connect()
+
