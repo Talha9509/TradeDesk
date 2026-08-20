@@ -4,6 +4,7 @@ import getOrCreateBalance from "../utils/getOrCreateBalance";
 
 export const CancelOrder = (data: Record<string | number, any>, userId: number) => {
   // Algorithm:
+  let incomingBalance;
   // 0. find the order using orderId
   const orderId = data.orderId
   const reqOrder = Orders.get(orderId)
@@ -40,6 +41,7 @@ export const CancelOrder = (data: Record<string | number, any>, userId: number) 
   //   ii. if filledQty != 0 return traded amount - locked amount (for buy, if traded amount/asset <             
   //       given price, then return that USD as well to available)
   const balance = getOrCreateBalance(userId)
+  incomingBalance = balance
   const usd = balance?.get("USD")!;
   const assetBalance = balance?.get(asset!)!;
   let filled: "Cancelled" | "Partially_filled";
@@ -92,5 +94,5 @@ export const CancelOrder = (data: Record<string | number, any>, userId: number) 
   console.log(`5: ${JSON.stringify(reqOrder)}`)
   
   // 6. update balance of user
-  return { order: reqOrder, otherOrders: null, fills: reqOrder.fills, buyerBalance: balance, sellerBalance: null, userId, createOrCancel: 'cancel' }
+  return { order: reqOrder, otherOrders: null, fills: reqOrder.fills, incomingBalance, makerBalance: null, userId, createOrCancel: 'cancel' }
 }

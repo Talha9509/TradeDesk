@@ -53,7 +53,7 @@ model Orders {
   userId       Int
   user       Balances    @relation(fields: [userId], references: [userId])
   market      Asset
-  price        Int
+  price        Int?
   quantity     Int
   type         Type
   side         Side

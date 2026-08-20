@@ -6,10 +6,13 @@ import restOrderOnBook from '../utils/restOrderonBook'
 export const CreateOrder = (data: Record<string | number, any>, userId: number) => {
   let buyerBalance;
   let sellerBalance;
+  let incomingBalance;
+  let makerBalances: Record<number, any> = {};
   let otherOrders: OrderRecord[] = [];
   // 2. check balance of user if he has money for req quantity, stock for selling
   const asset =  data.stockName
   const balance = getOrCreateBalance(userId!)
+  incomingBalance = balance
   console.log(`Step 2.1: Balance`)
   console.log(balance)
 
@@ -102,10 +105,17 @@ export const CreateOrder = (data: Record<string | number, any>, userId: number) 
       console.log(`Step 4.5: matchedQty ${matchedQty}`)
 
       const reqAmountt = matchedQty * makerOrder.price
+
+      
+      const oneMakerBalances = [];
+      const makerBalance = getOrCreateBalance(makerOrder.userId)
+      oneMakerBalances.push(makerBalance)
+      makerBalances[makerOrder.userId] = makerBalance
+
       if (incomingOrder.type == 'market') {
         if (matchedQty == 0 || (incomingOrder.side == 'buy' && reqAmountt > usd?.available!)) {
           incomingOrder.status = incomingOrder.filledQty > 0 ? "Partially_filled" : 'Cancelled';
-          return { order: incomingOrder, fills: orderFill, message: incomingOrder.filledQty > 0 && 'Not enough balance, so order is partially filled', userId, buyerBalance, otherOrders, sellerBalance, createOrCancel: 'create' }
+          return { order: incomingOrder, fills: orderFill, message: incomingOrder.filledQty > 0 && 'Not enough balance, so order is partially filled', userId, incomingBalance, otherOrders, makerBalances: Object.keys(makerBalances).length > 0 ? makerBalances : null, createOrCancel: 'create' }
         }
       }
 
@@ -197,7 +207,7 @@ export const CreateOrder = (data: Record<string | number, any>, userId: number) 
 
   console.log(`Step last: Balance `)
   console.log(balance)
-  return { order: incomingOrder, otherOrders: otherOrders.length > 0 ? otherOrders : null, fills: orderFill.length > 0 ? orderFill : null, buyerBalance: buyerBalance != undefined ? buyerBalance : balance, sellerBalance, userId, createOrCancel: 'create' }
+  return { order: incomingOrder, otherOrders: otherOrders.length > 0 ? otherOrders : null, fills: orderFill.length > 0 ? orderFill : null, incomingBalance, makerBalances: Object.keys(makerBalances).length > 0 ? makerBalances : null, userId, createOrCancel: 'create' }
 
   // 4. 
     // i. for market:
