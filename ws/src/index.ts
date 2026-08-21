@@ -30,6 +30,7 @@ async function poll() {
           activeSubscriptions[parsedUpdate.stream]?.forEach((ws) => {
             if (ws.readyState === ws.OPEN)  ws.send(JSON.stringify(parsedUpdate.data))
           })
+          await StreamClient.xAck(streamKey, groupName, message.id)
         }
       }
       poll()

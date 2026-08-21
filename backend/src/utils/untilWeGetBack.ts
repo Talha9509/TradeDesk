@@ -35,6 +35,7 @@ async function pollQueue(){
           pendingResolves[res.Identifier].reject(new Error(res.error))
         }
       }
+      await subscriberClient.xAck(streamKey, groupName, message.id)
     }
     pollQueue()
   }
