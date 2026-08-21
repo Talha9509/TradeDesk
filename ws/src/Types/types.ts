@@ -3,7 +3,10 @@ type options = `depth.SOL` | `depth.BTC` | `depth.ETH`
 
 export type update = {
   stream: options,
-  data: string,
+  data: {
+    asks: [string, string][],
+    bids: [string, string][],
+  },
   lastUpdatedId: number
 }
 

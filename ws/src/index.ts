@@ -27,7 +27,9 @@ async function poll() {
         for (const message of response.messages) {
           const parsedUpdate: update = JSON.parse(message.message.update)
           console.log(parsedUpdate)
-          activeSubscriptions[parsedUpdate.stream]?.forEach(ws => ws.send(parsedUpdate.data))
+          activeSubscriptions[parsedUpdate.stream]?.forEach((ws) => {
+            if (ws.readyState === ws.OPEN)  ws.send(JSON.stringify(parsedUpdate.data))
+          })
         }
       }
       poll()
@@ -50,6 +52,7 @@ wss.on('connection', async (socket: WebSocket) => {
       console.log("subscribed")
       console.log(JSON.stringify(parsedData))
       console.log(JSON.stringify(activeSubscriptions))
+      socket.send(JSON.stringify({ result: "subscribed" }))
     } else {
       parsedData.params.forEach((param) => {
         if (!activeSubscriptions[param]) {
@@ -60,5 +63,14 @@ wss.on('connection', async (socket: WebSocket) => {
       console.log("unsubscribed")
       console.log(JSON.stringify(activeSubscriptions))
     }
+  })
+
+  socket.on("close", () => {
+    Object.keys(activeSubscriptions).forEach((stream) => {
+      const sockets = activeSubscriptions[stream]
+      if (sockets) {
+        activeSubscriptions[stream] = sockets.filter((websocket) => websocket !== socket)
+      }
+    })
   })
 })
