@@ -50,7 +50,7 @@ console.log(`Engine dashboard running on http://localhost:${port}`)
 
 export let lastId = await loadEngineState()
 
-// seedEngine()
+seedEngine()
 
 while (1) {
   const response = await subscriberClient.xRead({ key: 'backend_to_engine', id: lastId }, { COUNT: 5, BLOCK: 100 })

@@ -22,7 +22,7 @@ type OrderBook = { bids: OrderBookSide, asks: OrderBookSide }
 //   ETH: { bids: {}, asks: {} }
 // }
 
-type market = 'SOL' | 'BTC' | 'ETH'
+export type market = 'SOL' | 'BTC' | 'ETH'
 function createEmptyOrderBook(): OrderBook {
   return { bids: new Map(), asks: new Map() }
 }
@@ -33,4 +33,4 @@ export const OrderBook: Map<market, OrderBook> = new Map([
   ["ETH", createEmptyOrderBook()]
 ])
 
-
+export type updatedAsksBids = Record<number, string>

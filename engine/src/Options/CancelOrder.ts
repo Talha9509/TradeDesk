@@ -1,10 +1,12 @@
-import { OrderBook } from '../Types/types'
+import { OrderBook, type updatedAsksBids } from '../Types/types'
 import { Orders, Fills, type OrderRecord, type Fill } from '../Types/OrderFillsType'
 import getOrCreateBalance from "../utils/getOrCreateBalance";
 
 export const CancelOrder = (data: Record<string | number, any>, userId: number) => {
   // Algorithm:
   let incomingBalance;
+  let updatedAsks: updatedAsksBids = {};
+  let updatedBids: updatedAsksBids = {};
   // 0. find the order using orderId
   const orderId = data.orderId
   const reqOrder = Orders.get(orderId)
@@ -29,6 +31,11 @@ export const CancelOrder = (data: Record<string | number, any>, userId: number) 
   if(!priceLevel || !reqOrder) throw Error("Can't Cancel the Order")
   const remainQty = reqOrder?.quantity - reqOrder?.filledQty
   priceLevel.totalQty = priceLevel.totalQty - remainQty
+  if(reqOrder.side == 'buy'){
+    updatedBids[reqOrder.price] = String(priceLevel.totalQty)
+  } else {
+    updatedAsks[reqOrder.price] = String(priceLevel.totalQty)
+  }
   const newOrders = priceLevel.orders.filter((order) => order.orderId != orderId)
   priceLevel.orders = newOrders
   if(priceLevel.orders.length == 0 && priceLevel.totalQty == 0){
@@ -94,5 +101,5 @@ export const CancelOrder = (data: Record<string | number, any>, userId: number) 
   console.log(`5: ${JSON.stringify(reqOrder)}`)
   
   // 6. update balance of user
-  return { order: reqOrder, otherOrders: null, fills: reqOrder.fills, incomingBalance, makerBalance: null, userId, createOrCancel: 'cancel' }
+  return { order: reqOrder, otherOrders: null, fills: reqOrder.fills, incomingBalance, makerBalance: null, userId, createOrCancel: 'cancel', updatedAsks, updatedBids, asset }
 }

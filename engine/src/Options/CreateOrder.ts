@@ -1,4 +1,4 @@
-import { OrderBook } from '../Types/types'
+import { OrderBook, type updatedAsksBids } from '../Types/types'
 import { Orders, Fills, type OrderRecord, type Fill } from '../Types/OrderFillsType'
 import getOrCreateBalance from "../utils/getOrCreateBalance";
 import restOrderOnBook from '../utils/restOrderonBook'
@@ -9,6 +9,8 @@ export const CreateOrder = (data: Record<string | number, any>, userId: number) 
   let incomingBalance;
   let makerBalances: Record<number, any> = {};
   let otherOrders: OrderRecord[] = [];
+  let updatedAsks: updatedAsksBids = {}
+  let updatedBids: updatedAsksBids = {}
   // 2. check balance of user if he has money for req quantity, stock for selling
   const asset =  data.stockName
   const balance = getOrCreateBalance(userId!)
@@ -68,6 +70,8 @@ export const CreateOrder = (data: Record<string | number, any>, userId: number) 
     throw new Error(`Asset not in orderbook: ${AssetInOrderBook}`)
   }
   const oppBook = AssetInOrderBook[oppSide]
+  const asksBook = AssetInOrderBook["asks"]
+  const bidsBook = AssetInOrderBook["bids"]
   // const oppBook = OrderBook[asset][oppSide]
 
   console.log(`Step 4.1: opp book`)
@@ -115,7 +119,15 @@ export const CreateOrder = (data: Record<string | number, any>, userId: number) 
       if (incomingOrder.type == 'market') {
         if (matchedQty == 0 || (incomingOrder.side == 'buy' && reqAmountt > usd?.available!)) {
           incomingOrder.status = incomingOrder.filledQty > 0 ? "Partially_filled" : 'Cancelled';
-          return { order: incomingOrder, fills: orderFill, message: incomingOrder.filledQty > 0 && 'Not enough balance, so order is partially filled', userId, incomingBalance, otherOrders, makerBalances: Object.keys(makerBalances).length > 0 ? makerBalances : null, createOrCancel: 'create' }
+          if(incomingOrder.side == 'buy' && incomingOrder.filledQty > 0){
+            const ask = asksBook.get(makerOrder.price)
+            updatedAsks[reqAmountt] = String(ask?.totalQty! - incomingOrder.filledQty)
+          }
+          else if(incomingOrder.side == 'sell' && incomingOrder.filledQty > 0){
+            const bid = bidsBook.get(makerOrder.price)
+            updatedBids[reqAmountt] = String(bid?.totalQty! - incomingOrder.filledQty)
+          }
+          return { order: incomingOrder, fills: orderFill, message: incomingOrder.filledQty > 0 && 'Not enough balance, so order is partially filled', userId, incomingBalance, otherOrders, makerBalances: Object.keys(makerBalances).length > 0 ? makerBalances : null, createOrCancel: 'create', updatedAsks, updatedBids, asset: incomingOrder.market }
         }
       }
 
@@ -124,6 +136,14 @@ export const CreateOrder = (data: Record<string | number, any>, userId: number) 
       console.log(`Step 4.6: incomingorder: ${JSON.stringify(incomingOrder)}, makerorder: ${JSON.stringify(makerOrder)}`)
       if(incomingOrder.filledQty === incomingOrder.quantity) incomingOrder.status = "Filled"
       if(makerOrder.filledQty === makerOrder.quantity) makerOrder.status = "Filled"
+
+      if(incomingOrder.side == 'buy'){
+        const ask = asksBook.get(makerOrder.price)
+        updatedAsks[levelPrice] = String(ask?.totalQty! - incomingOrder.filledQty)
+      } else {
+        const bid = bidsBook.get(makerOrder.price)
+        updatedBids[levelPrice] = String(bid?.totalQty! - incomingOrder.filledQty)
+      }
 
       const now = new Date().toISOString()
       const Fill: Fill = { 
@@ -198,16 +218,23 @@ export const CreateOrder = (data: Record<string | number, any>, userId: number) 
     console.log(`Step 4.11: level ${JSON.stringify(level)}`)
   }
   
-  if(incomingOrder.type == 'market' && incomingOrder.side == 'sell' && incomingOrder.filledQty > 0) incomingOrder.status = 'Partially_filled' 
+  if(incomingOrder.type == 'market' && incomingOrder.side == 'sell' && incomingOrder.filledQty > 0 && incomingOrder.quantity > incomingOrder.filledQty) incomingOrder.status = 'Partially_filled' 
 
   if(incomingOrder.filledQty < incomingOrder.quantity && incomingOrder.type == "limit"){
+    if(incomingOrder.side == 'buy'){
+      const bid = bidsBook.get(incomingOrder.price)
+      updatedBids[incomingOrder.price] = String((bid?.totalQty ?? 0)+ (incomingOrder.quantity - incomingOrder.filledQty))
+    } else {
+      const ask = asksBook.get(incomingOrder.price)
+      updatedAsks[incomingOrder.price] = String((ask?.totalQty ?? 0) + (incomingOrder.quantity - incomingOrder.filledQty))
+    }
     restOrderOnBook(incomingOrder)
     console.log(`Step 4.12: rest on orderbook`)
   }
 
   console.log(`Step last: Balance `)
   console.log(balance)
-  return { order: incomingOrder, otherOrders: otherOrders.length > 0 ? otherOrders : null, fills: orderFill.length > 0 ? orderFill : null, incomingBalance, makerBalances: Object.keys(makerBalances).length > 0 ? makerBalances : null, userId, createOrCancel: 'create' }
+  return { order: incomingOrder, otherOrders: otherOrders.length > 0 ? otherOrders : null, fills: orderFill.length > 0 ? orderFill : null, incomingBalance, makerBalances: Object.keys(makerBalances).length > 0 ? makerBalances : null, userId, createOrCancel: 'create', updatedAsks, updatedBids, asset: incomingOrder.market }
 
   // 4. 
     // i. for market:

@@ -1,10 +1,16 @@
 import persistData from './persistance'
 import { storeClient } from '../config/redis'
 import { lastId } from '../index'
+import EngToWS from '../utils/EngToWS'
+import type { market, updatedAsksBids } from '../Types/types';
 
 let changesCount = 0;
-export default async function snapshot() {
+export default async function snapshot(updatedAsks: updatedAsksBids, updatedBids: updatedAsksBids, asset: market) {
   changesCount++
+
+  console.log(updatedAsks)
+  console.log(updatedBids)
+  EngToWS(changesCount, updatedAsks, updatedBids, asset)
 
   if (changesCount % 50 !== 0) return
   await persistData(lastId)
