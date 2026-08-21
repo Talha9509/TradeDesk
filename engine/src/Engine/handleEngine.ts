@@ -10,7 +10,7 @@ import EngTodb from '../utils/EngTodb'
 export default async function handleEngine(engineReq: EngineRequest) {
   if(engineReq.function == 'create_order'){
     const result = await CreateOrder(engineReq.payload, engineReq.userId)
-    snapshot(result.updatedAsks, result.updatedBids, result.asset).catch((err) => {
+    void snapshot(result.updatedAsks, result.updatedBids, result.asset).catch((err) => {
       console.error("Snapshot failed:", err);
     });
 
@@ -22,7 +22,7 @@ export default async function handleEngine(engineReq: EngineRequest) {
   else if(engineReq.function == 'cancel_order'){
     const result = await CancelOrder(engineReq.payload, engineReq.userId)
     console.log(result)
-    snapshot(result.updatedAsks, result.updatedBids, result.asset).catch((err) => {
+    void snapshot(result.updatedAsks, result.updatedBids, result.asset).catch((err) => {
       console.error("Snapshot failed:", err);
     });
 
